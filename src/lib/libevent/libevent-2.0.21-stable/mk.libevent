@@ -1,0 +1,33 @@
+HDRS = http-internal.h
+INCDIR = cp
+
+SUBDIRS = compat include
+CCMODE = LIBRARY
+VERSION = 2.0.21
+
+LINKS = arc4random.c epoll_sub.c
+
+SYS_SRC = select.c poll.c epoll.c signal.c
+
+CORE_SRC = event.c evthread.c buffer.c \
+	bufferevent.c bufferevent_sock.c bufferevent_filter.c \
+	bufferevent_pair.c listener.c bufferevent_ratelim.c \
+	evmap.c	log.c evutil.c evutil_rand.c strlcpy.c $(SYS_SRC)
+
+EXTRA_SRC = event_tagging.c http.c evrpc.c
+
+HDRS = util-internal.h mm-internal.h ipv6-internal.h \
+	evrpc-internal.h strlcpy-internal.h evbuffer-internal.h \
+	bufferevent-internal.h http-internal.h event-internal.h \
+	evthread-internal.h ht-internal.h defer-internal.h \
+	minheap-internal.h log-internal.h evsignal-internal.h evmap-internal.h \
+	changelist-internal.h ratelim-internal.h iocp-internal.h
+
+SRCS = $(CORE_SRC) $(EXTRA_SRC) 
+
+TARGET = libevent
+
+TTS_CFLAGS := $(TTS_CFLAGS) -DHAVE_CONFIG_H -Icompat -Iinclude -UNDEBUG
+ifeq ($(DEBUG), 1)
+	TTS_CFLAGS += -DLIBEVENT_DEBUG
+endif

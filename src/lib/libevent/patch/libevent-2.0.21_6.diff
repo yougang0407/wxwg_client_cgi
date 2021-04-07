@@ -1,0 +1,30 @@
+Index: libevent-2.0.21-stable/bufferevent_openssl.c
+===================================================================
+--- libevent-2.0.21-stable/bufferevent_openssl.c	(revision 20825)
++++ libevent-2.0.21-stable/bufferevent_openssl.c	(working copy)
+@@ -1226,6 +1226,7 @@
+ 		if (bev_ssl->renegotiate_free_cb) {
+ 			bev_ssl->renegotiate_free_cb(bev_ssl->ssl, bev_ssl->renegotiate_arg);
+ 		}
++		SSL_shutdown(bev_ssl->ssl);
+ 		SSL_free(bev_ssl->ssl);
+ 	} else {
+ 		if (bev_ssl->underlying) {
+@@ -1329,11 +1330,13 @@
+ 		goto err;
+ 
+ 	bev_p = &bev_ssl->bev;
+-
++	
+ 	if (bufferevent_init_common(bev_p, base,
+-		&bufferevent_ops_openssl, tmp_options) < 0)
+-		goto err;
+-
++		&bufferevent_ops_openssl, tmp_options) < 0) {
++		mm_free(bev_ssl);
++		return NULL;
++	}
++	
+ 	/* Don't explode if we decide to realloc a chunk we're writing from in
+ 	 * the output buffer. */
+ 	SSL_set_mode(ssl, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);

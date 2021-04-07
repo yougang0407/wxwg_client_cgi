@@ -1,0 +1,153 @@
+Index: http.c
+===================================================================
+--- http.c	(revision 9568)
++++ http.c	(working copy)
+@@ -1375,6 +1375,7 @@
+ 		evhttp_connection_fail(evcon, EVCON_HTTP_TIMEOUT);
+ 	} else if (what & (BEV_EVENT_EOF|BEV_EVENT_ERROR)) {
+ 		evhttp_connection_fail(evcon, EVCON_HTTP_EOF);
++	} else if (what == BEV_EVENT_CONNECTED) {
+ 	} else {
+ 		evhttp_connection_fail(evcon, EVCON_HTTP_BUFFER_ERROR);
+ 	}
+@@ -2069,7 +2070,7 @@
+ }
+ 
+ struct evhttp_connection *
+-evhttp_connection_base_new(struct event_base *base, struct evdns_base *dnsbase,
++evhttp_connection_base_bufferevent_new(struct event_base *base, struct evdns_base *dnsbase, struct bufferevent* bev,
+     const char *address, unsigned short port)
+ {
+ 	struct evhttp_connection *evcon = NULL;
+@@ -2095,14 +2096,22 @@
+ 		goto error;
+ 	}
+ 
+-	if ((evcon->bufev = bufferevent_new(-1,
+-		    evhttp_read_cb,
+-		    evhttp_write_cb,
+-		    evhttp_error_cb, evcon)) == NULL) {
+-		event_warn("%s: bufferevent_new failed", __func__);
+-		goto error;
+-	}
+-
++	if (bev == NULL) {
++        if ((evcon->bufev = bufferevent_new(-1,
++            evhttp_read_cb,					
++            evhttp_write_cb,					
++            evhttp_error_cb, evcon)) == NULL) {			
++            event_warn("%s: bufferevent_new failed", __func__);			
++            goto error;		
++        }
++    } else {
++        bufferevent_setcb(bev, 
++            evhttp_read_cb, 
++            evhttp_write_cb, 
++            evhttp_error_cb, evcon);
++        evcon->bufev = bev; 	
++    }
++    
+ 	evcon->state = EVCON_DISCONNECTED;
+ 	TAILQ_INIT(&evcon->requests);
+ 
+@@ -2131,6 +2140,13 @@
+ 	return evcon->bufev;
+ }
+ 
++struct evhttp_connection *
++evhttp_connection_base_new(struct event_base *base, struct evdns_base *dnsbase,
++    const char *address, unsigned short port)
++{
++    return evhttp_connection_base_bufferevent_new(base, dnsbase, NULL, address, port);
++}
++
+ void
+ evhttp_connection_set_base(struct evhttp_connection *evcon,
+     struct event_base *base)
+@@ -2142,6 +2158,14 @@
+ }
+ 
+ void
++evhttp_set_bevcb(struct evhttp *http,
++    struct bufferevent* (*cb)(struct event_base *, void *), void *cbarg)
++{
++    http->bevcb = cb;
++    http->bevcbarg = cbarg;
++}
++
++void
+ evhttp_connection_set_timeout(struct evhttp_connection *evcon,
+     int timeout_in_secs)
+ {
+@@ -3675,7 +3699,8 @@
+ {
+ 	struct evhttp_connection *evcon;
+ 	char *hostname = NULL, *portname = NULL;
+-
++    struct bufferevent* bev = NULL;
++    
+ 	name_from_addr(sa, salen, &hostname, &portname);
+ 	if (hostname == NULL || portname == NULL) {
+ 		if (hostname) mm_free(hostname);
+@@ -3687,8 +3712,11 @@
+ 		__func__, hostname, portname, EV_SOCK_ARG(fd)));
+ 
+ 	/* we need a connection object to put the http request on */
+-	evcon = evhttp_connection_base_new(
+-		http->base, NULL, hostname, atoi(portname));
++    if (http->bevcb != NULL) {
++        bev = (*http->bevcb)(http->base, http->bevcbarg);
++    }
++    evcon = evhttp_connection_base_bufferevent_new(
++        http->base, NULL, bev, hostname, atoi(portname));
+ 	mm_free(hostname);
+ 	mm_free(portname);
+ 	if (evcon == NULL)
+Index: include/event2/http.h
+===================================================================
+--- include/event2/http.h	(revision 9568)
++++ include/event2/http.h	(working copy)
+@@ -37,6 +37,7 @@
+ /* In case we haven't included the right headers yet. */
+ struct evbuffer;
+ struct event_base;
++struct bufferevent;
+ 
+ /** @file event2/http.h
+  *
+@@ -233,6 +234,22 @@
+ void evhttp_set_gencb(struct evhttp *http,
+     void (*cb)(struct evhttp_request *, void *), void *arg);
+ 
++/**   
++    Set a callback used to create new bufferevents for connections   
++    to a given evhttp object.   
++
++    You can use this to override the default bufferevent type -- for example,   
++    to make this evhttp object use SSL bufferevents rather than unencrypted   
++    ones.   
++
++    New bufferevents must be allocated with no fd set on them.   
++    @param http the evhttp server object for which to set the callback   
++    @param cb the callback to invoke for incoming connections   
++    @param arg an context argument for the callback 
++*/
++void evhttp_set_bevcb(struct evhttp *http,    
++    struct bufferevent *(*cb)(struct event_base *, void *), void *arg);
++
+ /**
+    Adds a virtual host to the http server.
+ 
+Index: http-internal.h
+===================================================================
+--- http-internal.h	(revision 9568)
++++ http-internal.h	(working copy)
+@@ -165,6 +165,8 @@
+ 	   don't match. */
+ 	void (*gencb)(struct evhttp_request *req, void *);
+ 	void *gencbarg;
++    struct bufferevent* (*bevcb)(struct event_base *, void *);
++    void *bevcbarg;
+ 
+ 	struct event_base *base;
+ };

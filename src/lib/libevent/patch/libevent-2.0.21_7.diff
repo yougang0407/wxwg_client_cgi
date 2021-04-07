@@ -1,0 +1,50 @@
+Index: patch/libevent-2.0.21_7.diff
+===================================================================
+Index: libevent-2.0.21-stable/mk.inf
+===================================================================
+--- libevent-2.0.21-stable/mk.inf	(revision 24083)
++++ libevent-2.0.21-stable/mk.inf	(working copy)
+@@ -1 +1 @@
+-SUBMKS = libevent libevent_openssl
++SUBMKS = libevent libevent_openssl libevent_dns
+Index: libevent-2.0.21-stable/include/event2/http_compat.h
+===================================================================
+--- libevent-2.0.21-stable/include/event2/http_compat.h	(revision 24083)
++++ libevent-2.0.21-stable/include/event2/http_compat.h	(working copy)
+@@ -79,6 +79,16 @@
+ void evhttp_connection_set_base(struct evhttp_connection *evcon,
+     struct event_base *base);
+ 
++/**
++ * A connection object that can be used to for making HTTP requests.  The
++ * connection object tries to establish the connection when it is given an
++ * http request object.
++ *
++ * @deprecated It does not allow an event base to be specified
++ */
++struct evhttp_connection *evhttp_connection_base_bufferevent_new(
++	struct event_base *base, struct evdns_base *dnsbase, 
++	struct bufferevent* bev, const char *address, unsigned short port);
+ 
+ /** Returns the request URI */
+ #define evhttp_request_uri evhttp_request_get_uri
+Index: libevent-2.0.21-stable/mk.libevent_dns
+===================================================================
+--- libevent-2.0.21-stable/mk.libevent_dns	(revision 0)
++++ libevent-2.0.21-stable/mk.libevent_dns	(revision 0)
+@@ -0,0 +1,9 @@
++CCMODE = LIBRARY
++
++SRCS = evdns.c
++TARGET = libevent_dns
++
++TTS_CFLAGS := $(TTS_CFLAGS) -fno-strict-aliasing -DHAVE_CONFIG_H -Icompat -Iinclude -UNDEBUG
++ifeq ($(DEBUG), 1)
++	TTS_CFLAGS += -DLIBEVENT_DEBUG
++endif
+
+Property changes on: libevent-2.0.21-stable/mk.libevent_dns
+___________________________________________________________________
+Added: svn:executable
+   + *
+

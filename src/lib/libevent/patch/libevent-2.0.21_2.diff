@@ -1,0 +1,45 @@
+Index: libevent/libevent-2.0.21-stable/log-internal.h
+===================================================================
+--- libevent/libevent-2.0.21-stable/log-internal.h	(revision 13838)
++++ libevent/libevent-2.0.21-stable/log-internal.h	(working copy)
+@@ -31,7 +31,8 @@
+ 
+ #ifdef __GNUC__
+ #define EV_CHECK_FMT(a,b) __attribute__((format(printf, a, b)))
+-#define EV_NORETURN __attribute__((noreturn))
++//#define EV_NORETURN __attribute__((noreturn))
++#define EV_NORETURN
+ #else
+ #define EV_CHECK_FMT(a,b)
+ #define EV_NORETURN
+Index: libevent/libevent-2.0.21-stable/http.c
+===================================================================
+--- libevent/libevent-2.0.21-stable/http.c	(revision 13838)
++++ libevent/libevent-2.0.21-stable/http.c	(working copy)
+@@ -4319,7 +4319,12 @@
+ 	if (! uri->scheme && !path_matches_noscheme(path))
+ 		goto err;
+ 
+-	EVUTIL_ASSERT(path);
++	// EVUTIL_ASSERT(path);
++	if (! path) {
++		event_errx(4, "%s(): path error", __func__);
++		goto err;
++	}
++	
+ 	uri->path = mm_strdup(path);
+ 	if (uri->path == NULL) {
+ 		event_warn("%s: strdup", __func__);
+Index: libevent/libevent-2.0.21-stable/log.c
+===================================================================
+--- libevent/libevent-2.0.21-stable/log.c	(revision 13838)
++++ libevent/libevent-2.0.21-stable/log.c	(working copy)
+@@ -74,7 +74,7 @@
+ {
+ 	if (fatal_fn) {
+ 		fatal_fn(errcode);
+-		exit(errcode); /* should never be reached */
++		// exit(errcode); /* should never be reached */
+ 	} else if (errcode == _EVENT_ERR_ABORT)
+ 		abort();
+ 	else

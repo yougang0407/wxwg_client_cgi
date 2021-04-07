@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions targetNamespace="http://Service.RNS.app" xmlns:apachesoap="http://xml.apache.org/xml-soap" xmlns:impl="http://Service.RNS.app" xmlns:intf="http://Service.RNS.app" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tns1="http://thrift.apache.org" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<!--WSDL created by Apache Axis version: 1.4
+Built on Apr 22, 2006 (06:55:48 PDT)-->
+ <wsdl:types>
+  <schema targetNamespace="http://thrift.apache.org" xmlns="http://www.w3.org/2001/XMLSchema">
+   <import namespace="http://Service.RNS.app"/>
+   <import namespace="http://xml.apache.org/xml-soap"/>
+   <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+   <complexType name="TException">
+    <sequence/>
+   </complexType>
+  </schema>
+  <schema targetNamespace="http://Service.RNS.app" xmlns="http://www.w3.org/2001/XMLSchema">
+   <import namespace="http://thrift.apache.org"/>
+   <import namespace="http://xml.apache.org/xml-soap"/>
+   <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+   <complexType name="ArrayOf_xsd_anyType">
+    <complexContent>
+     <restriction base="soapenc:Array">
+      <attribute ref="soapenc:arrayType" wsdl:arrayType="xsd:anyType[]"/>
+     </restriction>
+    </complexContent>
+   </complexType>
+  </schema>
+  <schema targetNamespace="http://xml.apache.org/xml-soap" xmlns="http://www.w3.org/2001/XMLSchema">
+   <import namespace="http://Service.RNS.app"/>
+   <import namespace="http://thrift.apache.org"/>
+   <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+   <complexType name="Vector">
+    <sequence>
+     <element maxOccurs="unbounded" minOccurs="0" name="item" type="xsd:anyType"/>
+    </sequence>
+   </complexType>
+  </schema>
+ </wsdl:types>
+
+   <wsdl:message name="ChallengeRequest">
+
+      <wsdl:part name="challenge" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="synAuthListRequest">
+
+      <wsdl:part name="authList" type="impl:ArrayOf_xsd_anyType">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="ChallengeResponse">
+
+      <wsdl:part name="ChallengeReturn" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="getLocalHostIpResponse">
+
+      <wsdl:part name="getLocalHostIpReturn" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="dicDataGetRequest">
+
+      <wsdl:part name="type" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="synAuthListResponse">
+
+   </wsdl:message>
+
+   <wsdl:message name="UserModifyRequest">
+
+      <wsdl:part name="inStr" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="UserListGetResponse">
+
+      <wsdl:part name="UserListGetReturn" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="UserCancelRequest">
+
+      <wsdl:part name="inStr" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="UserCancelResponse">
+
+      <wsdl:part name="UserCancelReturn" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="UserDefineRequest">
+
+      <wsdl:part name="inStr" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="UserModifyResponse">
+
+      <wsdl:part name="UserModifyReturn" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="dicDataGetResponse">
+
+      <wsdl:part name="dicDataGetReturn" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="unitListGetRequest">
+
+   </wsdl:message>
+
+   <wsdl:message name="TException">
+
+      <wsdl:part name="fault" type="tns1:TException">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="unitListGetResponse">
+
+      <wsdl:part name="unitListGetReturn" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="UserDefineResponse">
+
+      <wsdl:part name="UserDefineReturn" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="getLocalHostIpRequest">
+
+   </wsdl:message>
+
+   <wsdl:message name="UserListGetRequest">
+
+      <wsdl:part name="inStr" type="soapenc:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:portType name="RnServiceImpl">
+
+      <wsdl:operation name="Challenge" parameterOrder="challenge">
+
+         <wsdl:input message="impl:ChallengeRequest" name="ChallengeRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:ChallengeResponse" name="ChallengeResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="UserListGet" parameterOrder="inStr">
+
+         <wsdl:input message="impl:UserListGetRequest" name="UserListGetRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:UserListGetResponse" name="UserListGetResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getLocalHostIp">
+
+         <wsdl:input message="impl:getLocalHostIpRequest" name="getLocalHostIpRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:getLocalHostIpResponse" name="getLocalHostIpResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="UserDefine" parameterOrder="inStr">
+
+         <wsdl:input message="impl:UserDefineRequest" name="UserDefineRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:UserDefineResponse" name="UserDefineResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="UserModify" parameterOrder="inStr">
+
+         <wsdl:input message="impl:UserModifyRequest" name="UserModifyRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:UserModifyResponse" name="UserModifyResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="UserCancel" parameterOrder="inStr">
+
+         <wsdl:input message="impl:UserCancelRequest" name="UserCancelRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:UserCancelResponse" name="UserCancelResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="unitListGet">
+
+         <wsdl:input message="impl:unitListGetRequest" name="unitListGetRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:unitListGetResponse" name="unitListGetResponse">
+
+       </wsdl:output>
+
+         <wsdl:fault message="impl:TException" name="TException">
+
+       </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="dicDataGet" parameterOrder="type">
+
+         <wsdl:input message="impl:dicDataGetRequest" name="dicDataGetRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:dicDataGetResponse" name="dicDataGetResponse">
+
+       </wsdl:output>
+
+         <wsdl:fault message="impl:TException" name="TException">
+
+       </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="synAuthList" parameterOrder="authList">
+
+         <wsdl:input message="impl:synAuthListRequest" name="synAuthListRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:synAuthListResponse" name="synAuthListResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+   </wsdl:portType>
+
+   <wsdl:binding name="RNServiceSoapBinding" type="impl:RnServiceImpl">
+
+      <wsdlsoap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+      <wsdl:operation name="Challenge">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="ChallengeRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="ChallengeResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="UserListGet">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="UserListGetRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="UserListGetResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getLocalHostIp">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="getLocalHostIpRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="getLocalHostIpResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="UserDefine">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="UserDefineRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="UserDefineResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="UserModify">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="UserModifyRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="UserModifyResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="UserCancel">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="UserCancelRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="UserCancelResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="unitListGet">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="unitListGetRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="unitListGetResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="TException">
+
+            <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="TException" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="dicDataGet">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="dicDataGetRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="dicDataGetResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+         <wsdl:fault name="TException">
+
+            <wsdlsoap:fault encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" name="TException" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:fault>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="synAuthList">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="synAuthListRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="synAuthListResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+   </wsdl:binding>
+
+   <wsdl:service name="RnServiceImplService">
+
+      <wsdl:port binding="impl:RNServiceSoapBinding" name="RNService">
+
+         <wsdlsoap:address location="http://172.30.202.81:8086/app/services/RNService"/>
+
+      </wsdl:port>
+
+   </wsdl:service>
+
+</wsdl:definitions>

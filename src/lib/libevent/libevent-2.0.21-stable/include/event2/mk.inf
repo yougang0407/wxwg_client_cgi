@@ -1,0 +1,4 @@
+HDRS = *.h
+INCDIR = cp/event2
+
+LINKS = *.h

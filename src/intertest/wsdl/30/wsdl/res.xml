@@ -1,0 +1,666 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions targetNamespace="http://Service.RNS.app" xmlns:apachesoap="http://xml.apache.org/xml-soap" xmlns:impl="http://Service.RNS.app" xmlns:intf="http://Service.RNS.app" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<!--WSDL created by Apache Axis version: 1.4
+Built on Apr 22, 2006 (06:55:48 PDT)-->
+
+   <wsdl:message name="ChallengeRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="ChallengeResponse">
+
+      <wsdl:part name="ChallengeReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="SoftDefineRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DeviceModifyResponse">
+
+      <wsdl:part name="DeviceModifyReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DeviceDefineRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DataListGetRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DeviceCancelResponse">
+
+      <wsdl:part name="DeviceCancelReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="SoftDefineResponse">
+
+      <wsdl:part name="SoftDefineReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DeviceCancelRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="addDeviceBatchRequest">
+
+   </wsdl:message>
+
+   <wsdl:message name="SoftCancelRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="SoftCancelResponse">
+
+      <wsdl:part name="SoftCancelReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DeviceDefineResponse">
+
+      <wsdl:part name="DeviceDefineReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="SoftModifyRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="SoftListGetRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DataCancelRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DataDefineResponse">
+
+      <wsdl:part name="DataDefineReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DeviceListGetResponse">
+
+      <wsdl:part name="DeviceListGetReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="addDeviceBatchResponse">
+
+      <wsdl:part name="addDeviceBatchReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DataDefineRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DeviceListGetRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="SoftModifyResponse">
+
+      <wsdl:part name="SoftModifyReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DataCancelResponse">
+
+      <wsdl:part name="DataCancelReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DataListGetResponse">
+
+      <wsdl:part name="DataListGetReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DataModifyResponse">
+
+      <wsdl:part name="DataModifyReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="SoftListGetResponse">
+
+      <wsdl:part name="SoftListGetReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DeviceModifyRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="DataModifyRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:portType name="RmsWebServiceImpl">
+
+      <wsdl:operation name="addDeviceBatch">
+
+         <wsdl:input message="impl:addDeviceBatchRequest" name="addDeviceBatchRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:addDeviceBatchResponse" name="addDeviceBatchResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DeviceDefine" parameterOrder="inStr">
+
+         <wsdl:input message="impl:DeviceDefineRequest" name="DeviceDefineRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:DeviceDefineResponse" name="DeviceDefineResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="SoftListGet" parameterOrder="inStr">
+
+         <wsdl:input message="impl:SoftListGetRequest" name="SoftListGetRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:SoftListGetResponse" name="SoftListGetResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="SoftDefine" parameterOrder="inStr">
+
+         <wsdl:input message="impl:SoftDefineRequest" name="SoftDefineRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:SoftDefineResponse" name="SoftDefineResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="Challenge" parameterOrder="inStr">
+
+         <wsdl:input message="impl:ChallengeRequest" name="ChallengeRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:ChallengeResponse" name="ChallengeResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DataListGet" parameterOrder="inStr">
+
+         <wsdl:input message="impl:DataListGetRequest" name="DataListGetRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:DataListGetResponse" name="DataListGetResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DataDefine" parameterOrder="inStr">
+
+         <wsdl:input message="impl:DataDefineRequest" name="DataDefineRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:DataDefineResponse" name="DataDefineResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DeviceCancel" parameterOrder="inStr">
+
+         <wsdl:input message="impl:DeviceCancelRequest" name="DeviceCancelRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:DeviceCancelResponse" name="DeviceCancelResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DeviceModify" parameterOrder="inStr">
+
+         <wsdl:input message="impl:DeviceModifyRequest" name="DeviceModifyRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:DeviceModifyResponse" name="DeviceModifyResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DeviceListGet" parameterOrder="inStr">
+
+         <wsdl:input message="impl:DeviceListGetRequest" name="DeviceListGetRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:DeviceListGetResponse" name="DeviceListGetResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="SoftCancel" parameterOrder="inStr">
+
+         <wsdl:input message="impl:SoftCancelRequest" name="SoftCancelRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:SoftCancelResponse" name="SoftCancelResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="SoftModify" parameterOrder="inStr">
+
+         <wsdl:input message="impl:SoftModifyRequest" name="SoftModifyRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:SoftModifyResponse" name="SoftModifyResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DataCancel" parameterOrder="inStr">
+
+         <wsdl:input message="impl:DataCancelRequest" name="DataCancelRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:DataCancelResponse" name="DataCancelResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DataModify" parameterOrder="inStr">
+
+         <wsdl:input message="impl:DataModifyRequest" name="DataModifyRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:DataModifyResponse" name="DataModifyResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+   </wsdl:portType>
+
+   <wsdl:binding name="RmsWebServiceSoapBinding" type="impl:RmsWebServiceImpl">
+
+      <wsdlsoap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+      <wsdl:operation name="addDeviceBatch">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="addDeviceBatchRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="addDeviceBatchResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DeviceDefine">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="DeviceDefineRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="DeviceDefineResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="SoftListGet">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="SoftListGetRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="SoftListGetResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="SoftDefine">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="SoftDefineRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="SoftDefineResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="Challenge">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="ChallengeRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="ChallengeResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DataListGet">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="DataListGetRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="DataListGetResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DataDefine">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="DataDefineRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="DataDefineResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DeviceCancel">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="DeviceCancelRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="DeviceCancelResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DeviceModify">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="DeviceModifyRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="DeviceModifyResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DeviceListGet">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="DeviceListGetRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="DeviceListGetResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="SoftCancel">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="SoftCancelRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="SoftCancelResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="SoftModify">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="SoftModifyRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="SoftModifyResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DataCancel">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="DataCancelRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="DataCancelResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="DataModify">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="DataModifyRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="DataModifyResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://Service.RNS.app" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+   </wsdl:binding>
+
+   <wsdl:service name="RmsWebServiceImplService">
+
+      <wsdl:port binding="impl:RmsWebServiceSoapBinding" name="RmsWebService">
+
+         <wsdlsoap:address location="http://172.30.202.41:8086/app/services/RmsWebService"/>
+
+      </wsdl:port>
+
+   </wsdl:service>
+
+</wsdl:definitions>

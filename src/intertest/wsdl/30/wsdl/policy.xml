@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions targetNamespace="http://service.auth/" xmlns:apachesoap="http://xml.apache.org/xml-soap" xmlns:impl="http://service.auth/" xmlns:intf="http://service.auth/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+<!--WSDL created by Apache Axis version: 1.4
+Built on Apr 22, 2006 (06:55:48 PDT)-->
+
+   <wsdl:message name="getPermissionsByUserIdRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="judgePermissionResponse">
+
+      <wsdl:part name="judgePermissionReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="getPermissionsByUserIdResponse">
+
+      <wsdl:part name="getPermissionsByUserIdReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="getPermissionsByDeviceIdRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="getPermissionsByDeviceIdResponse">
+
+      <wsdl:part name="getPermissionsByDeviceIdReturn" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:message name="judgePermissionRequest">
+
+      <wsdl:part name="inStr" type="xsd:string">
+
+      </wsdl:part>
+
+   </wsdl:message>
+
+   <wsdl:portType name="AuthorizeServiceImpl">
+
+      <wsdl:operation name="getPermissionsByUserId" parameterOrder="inStr">
+
+         <wsdl:input message="impl:getPermissionsByUserIdRequest" name="getPermissionsByUserIdRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:getPermissionsByUserIdResponse" name="getPermissionsByUserIdResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="judgePermission" parameterOrder="inStr">
+
+         <wsdl:input message="impl:judgePermissionRequest" name="judgePermissionRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:judgePermissionResponse" name="judgePermissionResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getPermissionsByDeviceId" parameterOrder="inStr">
+
+         <wsdl:input message="impl:getPermissionsByDeviceIdRequest" name="getPermissionsByDeviceIdRequest">
+
+       </wsdl:input>
+
+         <wsdl:output message="impl:getPermissionsByDeviceIdResponse" name="getPermissionsByDeviceIdResponse">
+
+       </wsdl:output>
+
+      </wsdl:operation>
+
+   </wsdl:portType>
+
+   <wsdl:binding name="AuthorizeServiceSoapBinding" type="impl:AuthorizeServiceImpl">
+
+      <wsdlsoap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+
+      <wsdl:operation name="getPermissionsByUserId">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="getPermissionsByUserIdRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://service.auth/" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="getPermissionsByUserIdResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://service.auth/" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="judgePermission">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="judgePermissionRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://service.auth/" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="judgePermissionResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://service.auth/" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+      <wsdl:operation name="getPermissionsByDeviceId">
+
+         <wsdlsoap:operation soapAction=""/>
+
+         <wsdl:input name="getPermissionsByDeviceIdRequest">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://service.auth/" use="encoded"/>
+
+         </wsdl:input>
+
+         <wsdl:output name="getPermissionsByDeviceIdResponse">
+
+            <wsdlsoap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="http://service.auth/" use="encoded"/>
+
+         </wsdl:output>
+
+      </wsdl:operation>
+
+   </wsdl:binding>
+
+   <wsdl:service name="AuthorizeServiceImplService">
+
+      <wsdl:port binding="impl:AuthorizeServiceSoapBinding" name="AuthorizeService">
+
+         <wsdlsoap:address location="http://172.30.202.54:8086/app/services/AuthorizeService"/>
+
+      </wsdl:port>
+
+   </wsdl:service>
+
+</wsdl:definitions>

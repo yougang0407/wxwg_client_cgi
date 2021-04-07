@@ -1,0 +1,50 @@
+Index: http.c
+===================================================================
+--- http.c	(revision 9992)
++++ http.c	(working copy)
+@@ -2159,7 +2159,8 @@
+ 
+ void
+ evhttp_set_bevcb(struct evhttp *http,
+-    struct bufferevent* (*cb)(struct event_base *, void *), void *cbarg)
++    struct bufferevent* (*cb)(struct event_base *, void *, evutil_socket_t),
++    void *cbarg)
+ {
+     http->bevcb = cb;
+     http->bevcbarg = cbarg;
+@@ -3713,7 +3714,7 @@
+ 
+ 	/* we need a connection object to put the http request on */
+     if (http->bevcb != NULL) {
+-        bev = (*http->bevcb)(http->base, http->bevcbarg);
++        bev = (*http->bevcb)(http->base, http->bevcbarg, fd);
+     }
+     evcon = evhttp_connection_base_bufferevent_new(
+         http->base, NULL, bev, hostname, atoi(portname));
+Index: include/event2/http.h
+===================================================================
+--- include/event2/http.h	(revision 9992)
++++ include/event2/http.h	(working copy)
+@@ -248,7 +248,8 @@
+     @param arg an context argument for the callback 
+ */
+ void evhttp_set_bevcb(struct evhttp *http,    
+-    struct bufferevent *(*cb)(struct event_base *, void *), void *arg);
++    struct bufferevent *(*cb)(struct event_base *, void *, evutil_socket_t),
++    void *arg);
+ 
+ /**
+    Adds a virtual host to the http server.
+Index: http-internal.h
+===================================================================
+--- http-internal.h	(revision 9992)
++++ http-internal.h	(working copy)
+@@ -165,7 +165,7 @@
+ 	   don't match. */
+ 	void (*gencb)(struct evhttp_request *req, void *);
+ 	void *gencbarg;
+-    struct bufferevent* (*bevcb)(struct event_base *, void *);
++    struct bufferevent* (*bevcb)(struct event_base *, void *, evutil_socket_t);
+     void *bevcbarg;
+ 
+ 	struct event_base *base;

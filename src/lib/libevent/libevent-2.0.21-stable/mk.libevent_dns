@@ -1,0 +1,9 @@
+CCMODE = LIBRARY
+
+SRCS = evdns.c
+TARGET = libevent_dns
+
+TTS_CFLAGS := $(TTS_CFLAGS) -fno-strict-aliasing -DHAVE_CONFIG_H -Icompat -Iinclude -UNDEBUG
+ifeq ($(DEBUG), 1)
+	TTS_CFLAGS += -DLIBEVENT_DEBUG
+endif

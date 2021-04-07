@@ -1,0 +1,18 @@
+Index: libevent-2.0.21-stable/bufferevent_openssl.c
+===================================================================
+--- libevent-2.0.21-stable/bufferevent_openssl.c	(revision 28101)
++++ libevent-2.0.21-stable/bufferevent_openssl.c	(working copy)
+@@ -1176,8 +1176,13 @@
+ be_openssl_disable(struct bufferevent *bev, short events)
+ {
+ 	struct bufferevent_openssl *bev_ssl = upcast(bev);
++	/* NOTE: when handshake faild, unable to execute write event to delete connection,
++	 * then the connection timeout, the daemon will core dump.
++	 */
++#if 0
+ 	if (bev_ssl->state != BUFFEREVENT_SSL_OPEN)
+ 		return 0;
++#endif
+ 
+ 	if (events & EV_READ)
+ 		stop_reading(bev_ssl);

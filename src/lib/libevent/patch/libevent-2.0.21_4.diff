@@ -1,0 +1,146 @@
+Index: libevent-2.0.21-stable/include/event2/bufferevent_ssl.h
+===================================================================
+--- libevent-2.0.21-stable/include/event2/bufferevent_ssl.h	(revision 18057)
++++ libevent-2.0.21-stable/include/event2/bufferevent_ssl.h	(working copy)
+@@ -100,6 +100,19 @@
+ 
+ void bufferevent_ssl_info_callback(const struct ssl_st *s, int where, int val);
+ 
++/* tanwb, for ssl renegotiate */
++typedef void (*evbuffer_negotiate_cb)(const struct ssl_st *s, int where, int ret);
++typedef void (*evbuffer_renegotiate_cb)(const struct ssl_st *s, void *arg);
++
++void bufferevent_openssl_negotiate_cb(
++	evbuffer_negotiate_cb cb);
++
++void bufferevent_openssl_renegotiate_cb(struct bufferevent *bufev, 
++	evbuffer_renegotiate_cb cb, void *arg);
++
++void bufferevent_openssl_info_callback(
++	const struct ssl_st *s, int where, int val);
++
+ #endif
+ 
+ #ifdef __cplusplus
+Index: libevent-2.0.21-stable/bufferevent_openssl.c
+===================================================================
+--- libevent-2.0.21-stable/bufferevent_openssl.c	(revision 18057)
++++ libevent-2.0.21-stable/bufferevent_openssl.c	(working copy)
+@@ -298,7 +298,11 @@
+ 	/* A count of how much data the bios have read/written total.  Used
+ 	   for rate-limiting. */
+ 	struct bio_data_counts counts;
+-
++	
++	/* tanwb, for ssl renegotiate, only support with server */
++	evbuffer_renegotiate_cb renegotiate_cb;
++	void *renegotiate_arg;
++	
+ 	/* If this value is greater than 0, then the last SSL_write blocked,
+ 	 * and we need to try it again with this many bytes. */
+ 	ev_ssize_t last_write;
+@@ -321,6 +325,11 @@
+ 
+ 	/* Are we currently connecting, accepting, or doing IO? */
+ 	unsigned state : 2;
++	
++	/* tanwb, initial handshake done, disable renegotiation (CVE-2009-3555) */
++	unsigned handshaked : 1;
++		
++	unsigned renegotiation : 1;
+ };
+ 
+ static int be_openssl_enable(struct bufferevent *, short);
+@@ -769,6 +778,13 @@
+ 	int n_to_read;
+ 	int all_result_flags = 0;
+ 
++	/* tanwb, initial handshake done, disable renegotiation (CVE-2009-3555) */	
++    if (bev_ssl->renegotiation && 
++		!bev_ssl->renegotiate_cb) {
++		_bufferevent_run_eventcb(&bev_ssl->bev.bev, BEV_EVENT_ERROR);
++        return;
++    }
++	
+ 	while (bev_ssl->write_blocked_on_read) {
+ 		r = do_write(bev_ssl, WRITE_FRAME);
+ 		if (r & (OP_BLOCKED|OP_ERR))
+@@ -1013,6 +1029,9 @@
+ 		bufferevent_enable(&bev_ssl->bev.bev, bev_ssl->bev.bev.enabled);
+ 		_bufferevent_run_eventcb(&bev_ssl->bev.bev,
+ 		    BEV_EVENT_CONNECTED);
++		
++		/* tanwb, initial handshake done, disable renegotiation (CVE-2009-3555) */
++		bev_ssl->handshaked = 1;
+ 		return 1;
+ 	} else {
+ 		int err = SSL_get_error(bev_ssl->ssl, r);
+@@ -1367,7 +1386,12 @@
+ 				goto err;
+ 		}
+ 	}
+-
++	
++	/* tanwb, initial handshake done, disable renegotiation (CVE-2009-3555) */
++	bev_ssl->handshaked = 0;
++	bev_ssl->renegotiation = 0;
++	SSL_set_app_data(ssl, bev_ssl);
++	
+ 	return &bev_ssl->bev.bev;
+ err:
+ 	if (bev_ssl)
+@@ -1452,3 +1476,54 @@
+ 	BEV_UNLOCK(bev);
+ 	return err;
+ }
++
++volatile static int evbuffer_openssl_negotiate_dbg = 0;
++static evbuffer_negotiate_cb evbuffer_openssl_negotiate_fn = NULL;
++
++void 
++bufferevent_openssl_negotiate_cb(evbuffer_negotiate_cb cb)
++{
++	evbuffer_openssl_negotiate_fn = cb;
++}
++
++void
++bufferevent_openssl_renegotiate_cb(struct bufferevent *bev, 
++	evbuffer_renegotiate_cb cb, void *arg)
++{
++	/* NOTE: does heree need lock ??? */
++	struct bufferevent_openssl *bev_ssl = upcast(bev);
++	if (!bev_ssl)
++		return;
++	
++	bev_ssl->renegotiate_cb = cb;
++	bev_ssl->renegotiate_arg = arg;
++}
++
++void 
++bufferevent_openssl_info_callback(const struct ssl_st *s, int where, int val)
++{
++	/* initial handshake done, disable renegotiation (CVE-2009-3555) */
++	struct bufferevent_openssl *bev_ssl;
++	bev_ssl = (struct bufferevent_openssl *)SSL_get_app_data(s);
++	
++	if (evbuffer_openssl_negotiate_dbg && 
++		evbuffer_openssl_negotiate_fn) {
++		evbuffer_openssl_negotiate_fn(s, where, val);
++	}
++	
++	if (where & SSL_CB_HANDSHAKE_START) {	
++        if (bev_ssl->handshaked) {
++            bev_ssl->renegotiation = 1;
++        }
++		
++    } else if (where & SSL_CB_HANDSHAKE_DONE) {
++		if (bev_ssl->handshaked && 	
++			bev_ssl->renegotiation &&
++			!SSL_renegotiate_pending(bev_ssl->ssl) && 
++			bev_ssl->renegotiate_cb) {
++			
++			bev_ssl->renegotiate_cb(bev_ssl->ssl, bev_ssl->renegotiate_arg);
++		}
++	}
++}
++

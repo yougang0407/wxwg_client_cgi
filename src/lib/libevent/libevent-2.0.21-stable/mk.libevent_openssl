@@ -1,0 +1,12 @@
+CCMODE = LIBRARY
+
+OPENSSL_SRC = bufferevent_openssl.c
+
+SRCS = $(OPENSSL_SRC)
+
+TARGET = libevent_openssl
+
+TTS_CFLAGS := $(TTS_CFLAGS) -DHAVE_CONFIG_H -Icompat -Iinclude -UNDEBUG
+ifeq ($(DEBUG), 1)
+	TTS_CFLAGS += -DLIBEVENT_DEBUG
+endif

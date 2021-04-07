@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='UTF-8'?><wsdl:definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="http://impl.ws.acms.gp.sdt.com/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:ns2="http://schemas.xmlsoap.org/soap/http" xmlns:ns1="http://Service.RNS.app" name="AuthServiceStanderService" targetNamespace="http://impl.ws.acms.gp.sdt.com/">
+  <wsdl:import location="http://10.43.190.23:8080/app/services/AuthService?wsdl=IAuthServiceStander.wsdl" namespace="http://Service.RNS.app">
+    </wsdl:import>
+  <wsdl:binding name="AuthServiceStanderServiceSoapBinding" type="ns1:IAuthServiceStander">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="AuthSecAssert">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input name="AuthSecAssert">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="AuthSecAssertResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault name="Exception" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="Random">
+      <soap:operation soapAction="" style="document"/>
+      <wsdl:input name="Random">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="RandomResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="Exception">
+        <soap:fault name="Exception" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="AuthServiceStanderService">
+    <wsdl:port binding="tns:AuthServiceStanderServiceSoapBinding" name="AuthServiceStanderPort">
+      <soap:address location="http://10.43.190.23:8080/app/services/AuthService"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

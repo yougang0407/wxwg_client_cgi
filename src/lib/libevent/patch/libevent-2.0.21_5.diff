@@ -1,0 +1,60 @@
+Index: include/event2/bufferevent_ssl.h
+===================================================================
+--- include/event2/bufferevent_ssl.h	(revision 18152)
++++ include/event2/bufferevent_ssl.h	(working copy)
+@@ -103,12 +103,13 @@
+ /* tanwb, for ssl renegotiate */
+ typedef void (*evbuffer_negotiate_cb)(const struct ssl_st *s, int where, int ret);
+ typedef void (*evbuffer_renegotiate_cb)(const struct ssl_st *s, void *arg);
++typedef void (*evbuffer_renegotiate_free_cb)(const struct ssl_st *s, void *arg);
+ 
+ void bufferevent_openssl_negotiate_cb(
+ 	evbuffer_negotiate_cb cb);
+ 
+ void bufferevent_openssl_renegotiate_cb(struct bufferevent *bufev, 
+-	evbuffer_renegotiate_cb cb, void *arg);
++	evbuffer_renegotiate_cb cb, evbuffer_renegotiate_free_cb free_cb, void *arg);
+ 
+ void bufferevent_openssl_info_callback(
+ 	const struct ssl_st *s, int where, int val);
+Index: bufferevent_openssl.c
+===================================================================
+--- bufferevent_openssl.c	(revision 18152)
++++ bufferevent_openssl.c	(working copy)
+@@ -303,6 +303,8 @@
+ 	evbuffer_renegotiate_cb renegotiate_cb;
+ 	void *renegotiate_arg;
+ 	
++	evbuffer_renegotiate_free_cb renegotiate_free_cb;
++	
+ 	/* If this value is greater than 0, then the last SSL_write blocked,
+ 	 * and we need to try it again with this many bytes. */
+ 	ev_ssize_t last_write;
+@@ -1220,6 +1222,10 @@
+ 			if (fd >= 0)
+ 				evutil_closesocket(fd);
+ 		}
++		/* tanwb, free renegotiation argument */
++		if (bev_ssl->renegotiate_free_cb) {
++			bev_ssl->renegotiate_free_cb(bev_ssl->ssl, bev_ssl->renegotiate_arg);
++		}
+ 		SSL_free(bev_ssl->ssl);
+ 	} else {
+ 		if (bev_ssl->underlying) {
+@@ -1488,7 +1494,7 @@
+ 
+ void
+ bufferevent_openssl_renegotiate_cb(struct bufferevent *bev, 
+-	evbuffer_renegotiate_cb cb, void *arg)
++	evbuffer_renegotiate_cb cb, evbuffer_renegotiate_free_cb free_cb, void *arg)
+ {
+ 	/* NOTE: does heree need lock ??? */
+ 	struct bufferevent_openssl *bev_ssl = upcast(bev);
+@@ -1496,6 +1502,7 @@
+ 		return;
+ 	
+ 	bev_ssl->renegotiate_cb = cb;
++	bev_ssl->renegotiate_free_cb = free_cb;
+ 	bev_ssl->renegotiate_arg = arg;
+ }
+ 
