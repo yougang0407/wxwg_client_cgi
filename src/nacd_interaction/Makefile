@@ -1,11 +1,11 @@
 ARCH := x86
 #ARCH := arm
 
-ifeq (,$(ARCH))
+ifeq (, $(ARCH))
 CC := gcc
 endif
 
-ifeq (x86,$(ARCH))
+ifeq (x86, $(ARCH))
 CC := gcc
 endif
 
@@ -17,14 +17,14 @@ OBJS := $(patsubst %c, %o, $(SRCS))
 
 INCLUDE := -I../include/
 
-.PHONY:all
-all:$(OBJS) test_nacd_tcp_clientd
-%.o:%.c
+.PHONY : all
+all : $(OBJS) test_nacd_tcp_clientd
+%.o : %.c
 	$(CC) $(CFLAGS) -o $@ -c $< $(INCLUDE)
-test_nacd_tcp_clientd:$(SRCS_TEST)
+test_nacd_tcp_clientd : $(SRCS_TEST)
 	$(CC) $(CFLAGS) -o $@ $(SRCS_TEST) $(OBJS) $(INCLUDE)
 
-.PHONY:clean
-clean:
+.PHONY : clean
+clean :
 	rm -rf *.o test_nacd_tcp_clientd
 

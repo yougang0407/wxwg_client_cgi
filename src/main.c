@@ -1,51 +1,32 @@
 #include <unistd.h>
-#include "httpd.h"
-#include "./include/log.h"
 
-//初始化
-int web_http_server_init(const char* ip, int port)
+#include <event2/bufferevent.h>
+#include <event2/buffer.h>
+#include <event2/listener.h>
+#include <event2/util.h>
+#include <event2/event.h>
+#include <event-internal.h>
+
+#include <web_server.h>
+#include <log.h>
+
+
+struct event_base *sg_current_base = NULL;
+
+
+int wxwgc_init_event(void)
 {
-	assert(ip);
-
-	int sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock < 0) {
-		print_log("socket failed!  ",FATAL);
-		return 1;
+	sg_current_base = event_init();
+	if (NULL == sg_current_base) {
+		return -1;
 	}
 
-	int opt = 1;
-	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-
-	struct sockaddr_in local;
-	local.sin_family = AF_INET;
-	local.sin_port = htons(port);
-	local.sin_addr.s_addr = inet_addr(ip);
-	socklen_t len = sizeof(local);
-
-	if (bind(sock, (struct sockaddr*)&local, len) < 0) {
-		print_log("bind_failed!  ",FATAL);
-		return 2;
-	}
-
-	if (listen(sock,5) < 0) {
-		print_log("listen failed!  ",FATAL);
-		return 3;
-	}
-	return sock;
+	return 0;
 }
 
 void Usage(const char* proc)
 {
-	WWC_DEBUG("%s [local_ip] [local_port]", proc);
-}
-
-void* accept_request(void* arg)
-{
-	int sock = *(int* )arg;
-	pthread_detach(pthread_self());
-	int ret = http_request_handle_func(sock);
-	WWC_DEBUG("ret = %d \n", ret);
-	return NULL;
+	WWC_DEBUG("%s [local_ip] [local_port]\n", proc);
 }
 
 int main(int argc, char *argv[])
@@ -57,21 +38,10 @@ int main(int argc, char *argv[])
 	int local_port = 8080;
 	snprintf(local_ip, sizeof(local_ip), "%s", argv[1]);
 	local_port = atoi(argv[2]);
-	int listen_sock = web_http_server_init(local_ip, local_port);
 
-	while (1) {
-		struct sockaddr_in client;
-		socklen_t len = sizeof(client);
-		int sock = accept(listen_sock, (struct sockaddr* )&client, &len);
-		if (sock < 0) {
-			print_log("accept failed!", FATAL);
-			continue;
-		}
+	wxwgc_init_event();
+	wxwgc_web_server_start(local_ip, local_port);
 
-		pthread_t tid;
-		pthread_create(&tid, NULL, accept_request, &sock);
-		usleep(50000);
-	}
-	close(listen_sock);
+	event_dispatch();
 	return 0;
 }

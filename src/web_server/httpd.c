@@ -1,6 +1,6 @@
-#include "httpd.h"
-#include "./include/log.h"
-#include "./intertest/test/user/user.h"
+#include <httpd.h>
+#include <log.h>
+#include "../intertest/test/user/user.h"
 
 #define DEBUG
 
@@ -229,26 +229,27 @@ static int cgi_exec_func(int sock, const char* method, char* path, const char* q
 #endif
 }
 
-int http_request_handle_func(int sock)
+int http_request_handle_func(wxwgc_web_client *client)
 {
 	int ret = 0;
-	char buf[BUFF_SIZE];
-	if (get_line(sock, buf, sizeof(buf)) <= 0) {
+
+	if (get_line(client->fd, client->buf, sizeof(client->buf)) <= 0) {
 		print_log("get_line error!  ", FATAL);
-		echo_errno(sock, 404);
+		WWC_ERROR("get_line error!\n");
+		echo_errno(client->fd, 404);
 		ret = 5;
 		goto end;
 	}
-	WWC_DEBUG("get_line buf: %s \n", buf);
+	WWC_DEBUG("get_line buf: %s \n", client->buf);
 
 	char *token = NULL;
-	token = strtok(buf, " ");
+	token = strtok(client->buf, " ");
 	char method[METHOD_SIZE];
 	snprintf(method, sizeof(method), "%s", token);
 	WWC_DEBUG("get_line method: %s \n", method);
 
 	if (strcasecmp(method, "GET") && strcasecmp(method, "POST")) {
-		echo_errno(sock, 404);
+		echo_errno(client->fd, 404);
 		ret = 6;
 		goto end;
 	}
@@ -331,8 +332,8 @@ int http_request_handle_func(int sock)
 	struct stat st;
 	if (stat(http_response_path, &st) < 0) {
 		print_log("file is not exist!  ",WARNING);
-		clear_header(sock);
-		echo_errno(sock, 404);
+		clear_header(client->fd);
+		echo_errno(client->fd, 404);
 		ret = 7;
 		goto end;
 	} else {
@@ -348,12 +349,12 @@ int http_request_handle_func(int sock)
 
 	WWC_DEBUG("http_response_path: %s \n", http_response_path);
 	if(cgi_mode_flag == CGI_MODE_ENABLE) {
-		ret = cgi_exec_func(sock, method, http_response_path, http_get_content, st.st_size);
+		ret = cgi_exec_func(client->fd, method, http_response_path, http_get_content, st.st_size);
 	} else {
-		ret = clear_header(sock);
-		ret = http_response_func(sock, http_response_path, st.st_size);
+		ret = clear_header(client->fd);
+		ret = http_response_func(client->fd, http_response_path, st.st_size);
 	}
 end:
-	close(sock);
+	close(client->fd);
 	return ret;
 }

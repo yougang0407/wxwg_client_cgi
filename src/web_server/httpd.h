@@ -15,6 +15,8 @@
 #include <string.h>
 #include <fcntl.h>
 
+#include "web_server.h"
+
 #define NORMAL 0
 #define WARNING 1
 #define FATAL 2
@@ -31,10 +33,7 @@
 
 void Usage(const char* proc);
 void print_log(const char* log_msg, int level);
-//int startup(const char* ip, int port);
-//static int get_line(int sock, char* buf, int sz);
-//void* accept_request(void* arg);
-int http_request_handle_func(int sock);
+int http_request_handle_func(wxwgc_web_client *client);
 void echo_errno();
 
 #endif

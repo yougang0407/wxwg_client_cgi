@@ -8,7 +8,7 @@
 #include<sys/socket.h>
 #include<arpa/inet.h>
 
-#include "../include/log.h"
+#include <log.h>
 
 int nacd_tcp_client()
 {
