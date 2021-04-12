@@ -14,7 +14,7 @@ CFLAGS := -g
 SRCS := $(wildcard *.c)
 OBJS := $(patsubst %c, %o, $(SRCS))
 
-INCLUDE := -I./ -I../include/ -I../lib/libevent/libevent-2.0.21-stable/ \
+INCLUDE := -I./ -I../include/ -I../nacd_interaction/include/ -I../lib/libevent/libevent-2.0.21-stable/ \
 		   -I../lib/libevent/libevent-2.0.21-stable/include/
 
 .PHONY : all

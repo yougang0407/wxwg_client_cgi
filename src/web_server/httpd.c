@@ -1,6 +1,7 @@
 #include <httpd.h>
 #include <log.h>
 #include "../intertest/test/user/user.h"
+#include "../nacd_interaction/include/nacd_tcp_client.h"
 
 #define DEBUG
 
@@ -269,9 +270,14 @@ int http_request_handle_func(wxwgc_web_client *client)
 	snprintf(path, sizeof(path), "%s", token);
 	WWC_DEBUG("get_line path: %s \n", path);
 
-	char http_get_content[HTTP_GET_CONTENT_SIZE] = {0};
-	char http_get_name[HTTP_GET_CONTENT_SIZE];
-	char http_get_passwd[HTTP_GET_CONTENT_SIZE];
+	char http_get_content[CONTENT_SIZE] = {0,};
+	user_info *user_msg = (user_info *)malloc(sizeof(user_info));
+	nacd_config_msg *nacd_cfg = (nacd_config_msg *)malloc(sizeof(nacd_config_msg));;
+	snprintf(nacd_cfg->nacd_server_ip, sizeof(nacd_cfg->nacd_server_ip), "0.0.0.0");
+	nacd_cfg->nacd_server_port = 8859;
+	nacd_cfg->timeout = 1;
+	nacd_cfg->ssl = 0;
+
 	if (strcasecmp("GET", method) == 0) {
 		token = strtok(NULL, "?");
 		snprintf(http_get_content, sizeof(http_get_content), "%s", token);
@@ -279,30 +285,34 @@ int http_request_handle_func(wxwgc_web_client *client)
 
 		if (strstr(http_get_content, "&") != NULL) {
 			token = strtok(http_get_content, "&");
-			snprintf(http_get_name, sizeof(http_get_name), "%s", token);
+			snprintf(user_msg->name, sizeof(user_msg->name), "%s", token);
 			token = strtok(NULL, "&");
-			snprintf(http_get_passwd, sizeof(http_get_passwd), "%s", token);
+			snprintf(user_msg->passwd, sizeof(user_msg->passwd), "%s", token);
 			
-			token = strtok(http_get_name, "=");
+			token = strtok(user_msg->name, "=");
 			token = strtok(NULL, "=");
-			snprintf(http_get_name, sizeof(http_get_name), "%s", token);
-			WWC_DEBUG("get_line http_get_name: %s \n", http_get_name);
+			snprintf(user_msg->name, sizeof(user_msg->name), "%s", token);
+			WWC_DEBUG("get_line user_msg->name: %s \n", user_msg->name);
 			
-			token = strtok(http_get_passwd, "=");
+			token = strtok(user_msg->passwd, "=");
 			token = strtok(NULL, "=");
-			snprintf(http_get_passwd, sizeof(http_get_passwd), "%s", token);
-			WWC_DEBUG("get_line http_get_passwd: %s \n", http_get_passwd);
+			snprintf(user_msg->passwd, sizeof(user_msg->passwd), "%s", token);
+			WWC_DEBUG("get_line user_msg->passwd: %s \n", user_msg->passwd);
 		}
 
 		// to do authenticate the third ID manage system
 		char id_manage_server_ip[16] = "172.30.202.81";
 		int id_manage_server_port = 8086;
 		void* res_user_info = NULL;
-		if (!get_user_identity_info(http_get_name, id_manage_server_ip, id_manage_server_port, \
+		int retval = 0;
+		if (retval = get_user_identity_info(user_msg->name, id_manage_server_ip, \
+											id_manage_server_port, \
 								   res_user_info)) {
-			WWC_DEBUG("username: %s  get_user_identity_info okay \n", http_get_name);
-		} else {
-
+			WWC_ERROR("username: %s  get_user_identity_info error[%d] \n", \
+					   user_msg->name, retval);
+		} else if (retval = nacd_tcp_client_handle_func(nacd_cfg, user_msg)) {
+			WWC_ERROR("username: %s  nacd_tcp_client_handle_func error[%d] \n", \
+					   user_msg->name, retval);
 		}
 
 		if (strstr(url, "?") != NULL)
@@ -317,8 +327,8 @@ int http_request_handle_func(wxwgc_web_client *client)
 				 "webui/index.html");
 	} else if (strcasecmp("/cgi_bin/cgi_select", path) == 0) {
 		#ifdef DEBUG
-		if (strcasecmp("admin", http_get_name) == 0 \
-			&& strcasecmp("123456", http_get_passwd) == 0) {
+		if (strcasecmp("admin", user_msg->name) == 0 \
+			&& strcasecmp("123456", user_msg->passwd) == 0) {
 			snprintf(http_response_path, sizeof(http_response_path), \
 					 "webui/login_success.html");
 		} else {
@@ -356,5 +366,7 @@ int http_request_handle_func(wxwgc_web_client *client)
 	}
 end:
 	close(client->fd);
+	free(user_msg);
+	free(nacd_cfg);
 	return ret;
 }

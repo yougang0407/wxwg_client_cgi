@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 	if (argc != 3) {
 		Usage(argv[0]);
 	}
-	char local_ip[32] = {"\0"};
+	char local_ip[32] = {0,};
 	int local_port = 8080;
 	snprintf(local_ip, sizeof(local_ip), "%s", argv[1]);
 	local_port = atoi(argv[2]);

@@ -29,7 +29,9 @@
 #define METHOD_SIZE 8
 #define URL_SIZE 512
 #define PATH_SIZE 256
-#define HTTP_GET_CONTENT_SIZE 256
+#define CONTENT_SIZE 256
+#define INFO_SIZE 128
+
 
 void Usage(const char* proc);
 void print_log(const char* log_msg, int level);
