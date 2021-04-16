@@ -1,0 +1,2 @@
+SUBMKS = xml2
+SUBDIRS = include

@@ -40,18 +40,23 @@
 #define NACD_USER_UNKNOWN 			16		/* User not known to the authsrv */
 #define NACD_USER_EXPIRE 			17		/* User expire  */
 #define NACD_CONN_TIMEOUT 			18		/* Connect to server timeout */
-#define NACD_BINDDN_ERR 			19		/* Bind binddn failure */
-#define NACD_SEARCH_METH_ERR 		20		/* Bind binddn failure */
-#define NACD_CONNECTION_SERVER		21
-#define NACD_SYNC_ERROR				22
+#define NACD_EV_TIMEOUT 			19		/* event timeout */
+#define NACD_EV_READ_ERR			20		/* read event error */
+#define NACD_EV_WRITE_ERR			21		/* write event error */
+#define NACD_SYNC_ERR				22
 #define NACD_SYN_NUM_LIMIT			23
-#define NACD_PASSWORD_ERROR			24
+#define NACD_CONNECTION_SERVER		24
 #define NACD_SYNCING				25
 #define NACD_HAVE_SERVER_SYNCING	26
 #define NACD_BASEDN_ERR				27
 #define NACD_TESTING				28
 #define NACD_HAVE_SERVER_TESTING	29
 #define NACD_LOCALDB_ERR 			30		/* db ERROR */
+#define NACD_CONN_ERR				31
+#define NACD_USER_PASSWD_AUTH_ERR	32
+#define NACD_SEC_ASSERT_ADD_ERR		33
+#define NACD_SEC_ASSERT_DEL_ERR		34
+#define NACD_QUIT_ERR				35
 
 
 #endif

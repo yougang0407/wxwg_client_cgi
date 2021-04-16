@@ -13,18 +13,9 @@
 
 #include "./include/nacd_tcp_client.h"
 #include "./include/nacd_types.h"
+#include "./soap/nac_soap.h"
 
-
-#define NACD_BUF 512
-
-
-enum nacd_state_e {
-	NACD_CONNECT,
-	NACD_SEND_USER,
-	NACD_SEND_PASS,
-	NACD_QUIT,
-	NACD_STATE_MAX,
-};
+#define NACD_BUF	512
 
 static int SSL_UP = 0;
 
@@ -92,7 +83,8 @@ static int nacd_send_message(nacd_session_data *session)
 	WWC_DEBUG("send nacd message\n");
 	int retval = NACD_SUCCESS;
 	char *srvdata = NULL;
-	char query[NACD_BUF] = {0,};
+	char send_buf[NACD_BUF] = {0,};
+	user_info_ptr_hdr *user_info_ptr_data_hdr = &(session->user_info_data.user_info_hdr);
 
 	switch (session->state) {
 		case NACD_CONNECT:
@@ -104,43 +96,43 @@ static int nacd_send_message(nacd_session_data *session)
 			}
 			break;
 
-		case NACD_SEND_USER:
-			snprintf(query, NACD_BUF, "USER %s\r\n", session->user_name);
-			WWC_DEBUG("SEND NACD_USER[%s]\n", query);
-			if (session->use_ssl) {
-				retval = ssl_nacd_send(session->fd, (char *)query, strlen(query));
+		case NACD_SEND_USER_PASSWD:
+			user_info_ptr_data_hdr->type = NACD_USER_PASSWD_AUTH;
+			user_info_ptr_data_hdr->len = sizeof(session->user_info_data);
+			WWC_DEBUG("SEND NACD_USER_PASSWD user_info_ptr_data_hdr->len[%d]\n", user_info_ptr_data_hdr->len);
+			user_info_ptr_data_hdr->type = htons(user_info_ptr_data_hdr->type);
+			user_info_ptr_data_hdr->len = htons(user_info_ptr_data_hdr->len);
+			WWC_DEBUG("SEND NACD_USER_PASSWD user_info_ptr_data_hdr->len[%d]\n", user_info_ptr_data_hdr->len);
+			WWC_DEBUG("session->nacd_config_msg_data.use_ssl[%d]\n", session->nacd_config_msg_data.use_ssl);
+			if (session->nacd_config_msg_data.use_ssl) {
+				retval = ssl_nacd_send(session->fd, (char *)(user_info_ptr_data_hdr), \
+						 sizeof(session->user_info_data));
 			} else {
-				retval = nacd_send(session->fd, (char *)query, strlen(query));
+				retval = nacd_send(session->fd, (char *)(user_info_ptr_data_hdr), \
+						 sizeof(session->user_info_data));
 			}
 			if (retval == -1) {
-				WWC_ERROR("nacd send user error\n");
+				WWC_ERROR("nacd send user and passwd error\n");
 				retval = NACD_SYSTEM_ERR;
 				goto end;
 			}
 			break;
-			
-		case NACD_SEND_PASS:
-			snprintf(query, NACD_BUF, "PASS %s\r\n", session->user_passwd);
-			WWC_DEBUG("SEND NACD_PASS[%s]\n", query);
-			if (session->use_ssl) {
-				retval = ssl_nacd_send(session->fd, (char *)query, strlen(query));
-			} else {
-				retval = nacd_send(session->fd, (char *)query, strlen(query));
-			}
-			if (retval == -1) {
-				WWC_ERROR("nacd send pass error\n");
-				retval = NACD_SYSTEM_ERR;
-				goto end;
-			}
+
+		case NACD_ADD_SEC_ASSERT:
+			WWC_DEBUG("ADD NACD_SEC_ASSERT\n");
 			break;
-			
+
+		case NACD_DEL_SEC_ASSERT:
+			WWC_DEBUG("DEL NACD_SEC_ASSERT\n");
+			break;
+
 		case NACD_QUIT:
-			snprintf(query, NACD_BUF, "QUIT\r\n");
-			WWC_DEBUG("SEND NACD_QUIT[%s]\n", query);
-			if (session->use_ssl) {
-				retval = ssl_nacd_send(session->fd, (char *)query, strlen(query));
+			snprintf(send_buf, NACD_BUF, "QUIT\r\n");
+			WWC_DEBUG("SEND NACD_QUIT[%s]\n", send_buf);
+			if (session->nacd_config_msg_data.use_ssl) {
+				retval = ssl_nacd_send(session->fd, (char *)send_buf, strlen(send_buf));
 			} else {
-				retval = nacd_send(session->fd, (char *)query, strlen(query));
+				retval = nacd_send(session->fd, (char *)send_buf, strlen(send_buf));
 			}
 			if (retval == -1) {
 				retval = NACD_SYSTEM_ERR;
@@ -157,47 +149,82 @@ end:
 static int nacd_recv_message(nacd_session_data *session)
 {
 	WWC_DEBUG("recv nacd message\n");
-	int retval;
+	int retval = -1;
 	char buf[NACD_BUF] = {0,};
 
-	if (session->use_ssl) {
+	WWC_DEBUG("recv_nacd_message, use_ssl[%d]\n", session->nacd_config_msg_data.use_ssl);
+	if (session->nacd_config_msg_data.use_ssl) {
 		ssl_nacd_recv(session->fd, buf, NACD_BUF);
 	} else {
 		nacd_recv(session->fd, buf, NACD_BUF);
 	}
-	WWC_DEBUG("recv_nacd_message, buf[%s]\n", buf);
+
+	user_info_ptr_hdr *user_info_ptr_data_hdr = NULL;
 	switch (session->state) {
 		case NACD_CONNECT:
 			WWC_DEBUG("RECV NACD_CONNECT\n\n");
 			if (nacd_error(buf)) {
-				retval = NACD_USER_UNKNOWN;
+				retval = NACD_CONN_ERR;
 				goto end;
 			}
-			session->state = NACD_SEND_USER;
+			session->state = NACD_SEND_USER_PASSWD;
 			break;
-			
-		case NACD_SEND_USER:
-			WWC_DEBUG("RECV NACD_SEND_USER\n\n");
+
+		case NACD_SEND_USER_PASSWD:
+			WWC_DEBUG("RECV NACD_SEND_USER_PASSWD\n\n");
 			if (nacd_error(buf)) {
-				retval = NACD_USER_UNKNOWN;
+				retval = NACD_USER_PASSWD_AUTH_ERR;
 				goto end;
 			}
-			session->state = NACD_SEND_PASS;
-			break;
-			
-		case NACD_SEND_PASS:
-			WWC_DEBUG("RECV NACD_SEND_PASS\n\n");
-			if (nacd_error(buf)) {
-				retval = NACD_PASSWORD_ERROR;
-				goto end;
+			user_info_ptr_data_hdr = (user_info_ptr_hdr *)buf;
+			user_info_ptr_data_hdr->type = ntohs(user_info_ptr_data_hdr->type);
+			WWC_DEBUG("user_info_ptr_data_hdr->type[%d]\n", user_info_ptr_data_hdr->type);
+			if (user_info_ptr_data_hdr->type == NACD_USER_PASSWD_AUTH_SUCCESS) {
+				WWC_DEBUG("NACD_USER_PASSWD_AUTH_SUCCESS\n");
+			} else if (user_info_ptr_data_hdr->type == NACD_USER_PASSWD_AUTH_FAILED) {
+				WWC_DEBUG("NACD_USER_PASSWD_AUTH_FAILED\n");
 			}
 			session->state = NACD_QUIT;
 			break;
-			
+
+		case NACD_ADD_SEC_ASSERT:
+			WWC_DEBUG("RECV NACD_ADD_SEC_ASSERT\n\n");
+			if (nacd_error(buf)) {
+				retval = NACD_SEC_ASSERT_ADD_ERR;
+				goto end;
+			}
+			user_info_ptr_data_hdr = (user_info_ptr_hdr *)buf;
+			user_info_ptr_data_hdr->type = ntohs(user_info_ptr_data_hdr->type);
+			WWC_DEBUG("user_info_ptr_data_hdr->type[%d]\n", user_info_ptr_data_hdr->type);
+			if (user_info_ptr_data_hdr->type == NACD_SEC_ASSERT_AAD_SUCCESS) {
+				WWC_DEBUG("NACD_SEC_ASSERT_AAD_SUCCESS\n");
+			} else if (user_info_ptr_data_hdr->type == NACD_SEC_ASSERT_AAD_FAILED) {
+				WWC_DEBUG("NACD_SEC_ASSERT_AAD_FAILED\n");
+			}
+			session->state = NACD_QUIT;
+			break;
+
+		case NACD_DEL_SEC_ASSERT:
+			WWC_DEBUG("RECV NACD_DEL_SEC_ASSERT\n\n");
+			if (nacd_error(buf)) {
+				retval = NACD_SEC_ASSERT_DEL_ERR;
+				goto end;
+			}
+			user_info_ptr_data_hdr = (user_info_ptr_hdr *)buf;
+			user_info_ptr_data_hdr->type = ntohs(user_info_ptr_data_hdr->type);
+			WWC_DEBUG("user_info_ptr_data_hdr->type[%d]\n", user_info_ptr_data_hdr->type);
+			if (user_info_ptr_data_hdr->type == NACD_SEC_ASSERT_DEL_SUCCESS) {
+				WWC_DEBUG("NACD_SEC_ASSERT_DEL_SUCCESS\n");
+			} else if (user_info_ptr_data_hdr->type == NACD_SEC_ASSERT_DEL_FAILED) {
+				WWC_DEBUG("NACD_SEC_ASSERT_DEL_FAILED\n");
+			}
+			session->state = NACD_QUIT;
+			break;
+
 		case NACD_QUIT:
 			WWC_DEBUG("RECV NACD_QUIT\n\n");
 			if (nacd_error(buf)) {
-				retval = NACD_PASSWORD_ERROR;
+				retval = NACD_DATA_ERR;
 				goto end;
 			}
 			session->state = NACD_STATE_MAX;
@@ -209,6 +236,17 @@ end:
 	return retval;
 }
 
+void session_drop(nacd_session_data * session)
+{
+	_session_drop(session);
+}
+
+int nacd_close_session(nacd_session_data *session, int result)
+{
+	session_drop(session);
+	return result;
+}
+
 void nacd_msg_process(int fd, short ev, void *arg)
 {
 	int retval = NACD_SUCCESS;
@@ -217,18 +255,23 @@ void nacd_msg_process(int fd, short ev, void *arg)
 
 	if (ev & EV_TIMEOUT) {
 		WWC_DEBUG("[EV_TIMEOUT]\n");
+		nacd_close_session(session, NACD_EV_TIMEOUT);
 	} else if (ev & EV_READ) {
 		WWC_DEBUG("[EV_READ]\n");
 		retval = nacd_recv_message(session);
+		WWC_DEBUG("session->state[%d] retval[%d]\n", session->state, retval);
 		if (retval != NACD_SUCCESS) {
-			WWC_DEBUG("[NACD_AUTH_ERR]\n");
+			WWC_DEBUG("[NACD_EV_READ_ERR]\n");
+			nacd_close_session(session, NACD_EV_READ_ERR);
 		} else {
 			if (session->state == NACD_STATE_MAX) {
 				WWC_DEBUG("[NACD_SUCCESS]\n");
+				nacd_close_session(session, NACD_SUCCESS);
 			} else {
 				WWC_DEBUG("[add EV_WRITE | EV_TIMEOUT]\n");
-				event_set(&session->ev, session->fd->sock, EV_WRITE|EV_TIMEOUT, nacd_msg_process, (void *)session);
-				tv.tv_sec = session->timeout;
+				event_set(&session->ev, session->fd->sock, EV_WRITE|EV_TIMEOUT, \
+						  nacd_msg_process, (void *)session);
+				tv.tv_sec = session->nacd_config_msg_data.timeout;
 				tv.tv_usec = 0;
 				event_add(&session->ev, &tv);
 			}
@@ -236,13 +279,16 @@ void nacd_msg_process(int fd, short ev, void *arg)
 	} else if (ev & EV_WRITE) {
 		WWC_DEBUG("[EV_WRITE]\n");
 		retval = nacd_send_message(session);
+		WWC_DEBUG("session->state[%d] retval[%d]\n", session->state, retval);
 		if (retval != NACD_SUCCESS) {
-			return;
+			WWC_DEBUG("[NACD_EV_WRITE_ERR]\n");
+			nacd_close_session(session, NACD_EV_WRITE_ERR);
 		}
 
 		WWC_DEBUG("[add EV_READ | EV_TIMEOUT]\n");
-		event_set(&session->ev, session->fd->sock, EV_READ|EV_TIMEOUT, nacd_msg_process, (void *)session);
-		tv.tv_sec = session->timeout;
+		event_set(&session->ev, session->fd->sock, EV_READ|EV_TIMEOUT, \
+				  nacd_msg_process, (void *)session);
+		tv.tv_sec = session->nacd_config_msg_data.timeout;
 		tv.tv_usec = 0;
 		event_add(&session->ev, &tv);
 	}
@@ -251,21 +297,38 @@ void nacd_msg_process(int fd, short ev, void *arg)
 int nacd_open_session(nacd_session_data *session)
 {
 	WWC_DEBUG("open nacd session\n");
+	int retval = NACD_SUCCESS;
+	session->state = NACD_CONNECT;
+	retval = nacd_send_message(session);
+	if (retval != NACD_SUCCESS) {
+		WWC_ERROR("open nacd session failed. retval[%d]\n", retval);
+		return retval;
+	}
+
+	return NACD_SUCCESS;
+}
+
+int nacd_process_task_session(nacd_session_data *session, int nacd_state)
+{
+	WWC_DEBUG("process nacd task session\n");
 	struct timeval tv;
 	int retval = NACD_SUCCESS;
 
+	session->state = nacd_state;
 	retval = nacd_send_message(session);
 	if (retval != NACD_SUCCESS) {
 		return retval;
 	}
 
-	event_set(&session->ev, session->fd->sock, EV_READ|EV_TIMEOUT, nacd_msg_process, (void *)session);
-	tv.tv_sec = session->timeout;
+	event_set(&session->ev, session->fd->sock, EV_READ|EV_TIMEOUT, nacd_msg_process, \
+			  (void *)session);
+	tv.tv_sec = session->nacd_config_msg_data.timeout;
 	tv.tv_usec = 0;
 	event_add(&session->ev, &tv);
 
 	return NACD_INCOMPLETE;
 }
+
 
 nacdsock* ssl_prepare(unsigned short use_ssl)
 {
@@ -315,7 +378,7 @@ nacdsock* ssl_prepare(unsigned short use_ssl)
 }
 
 
-nacdsock* nacd_prepare(nacd_config_msg *nacd_cfg, struct sockaddr_in *connection)
+nacdsock* nacd_prepare(nacd_config_msg *nacd_cfg_ptr, struct sockaddr_in *connection)
 {
 	WWC_DEBUG("nacd prepare start..\n");
 	nacdsock *fd;
@@ -323,18 +386,18 @@ nacdsock* nacd_prepare(nacd_config_msg *nacd_cfg, struct sockaddr_in *connection
 	memset((char*)connection, 0, sizeof(struct sockaddr_in));
 
 	connection->sin_family = AF_INET;
-	connection->sin_addr.s_addr = inet_addr(nacd_cfg->nacd_server_ip);
-	connection->sin_port = htons(nacd_cfg->nacd_server_port);
+	connection->sin_addr.s_addr = inet_addr(nacd_cfg_ptr->nacd_server_ip);
+	connection->sin_port = htons(nacd_cfg_ptr->nacd_server_port);
 
-	if (nacd_cfg->ssl) {
-		connection->sin_port = htons(nacd_cfg->nacd_server_port != 995 ? \
-			(unsigned short int)nacd_cfg->nacd_server_port : (unsigned short int)995);
+	if (nacd_cfg_ptr->use_ssl) {
+		connection->sin_port = htons(nacd_cfg_ptr->nacd_server_port != 995 ? \
+			(unsigned short int)nacd_cfg_ptr->nacd_server_port : (unsigned short int)995);
 	} else {
-		connection->sin_port = htons(nacd_cfg->nacd_server_port != 110 ? \
-			(unsigned short int)nacd_cfg->nacd_server_port : (unsigned short int)110);
+		connection->sin_port = htons(nacd_cfg_ptr->nacd_server_port != 110 ? \
+			(unsigned short int)nacd_cfg_ptr->nacd_server_port : (unsigned short int)110);
 	}
 
-	fd = ssl_prepare(nacd_cfg->ssl);
+	fd = ssl_prepare(nacd_cfg_ptr->use_ssl);
 	if (NULL == fd) {
 		WWC_ERROR("nacd tcp client sock error\n");
 	}
@@ -342,7 +405,7 @@ nacdsock* nacd_prepare(nacd_config_msg *nacd_cfg, struct sockaddr_in *connection
 	return fd;
 }
 
-int nacd_tcp_client_handle_func(nacd_config_msg *nacd_cfg, user_info *user_msg)
+int nacd_handle_user_passwd_func(nacd_config_msg *nacd_cfg_ptr, user_info *user_info_ptr, int nacd_state)
 {
 	int retval = NACD_SUCCESS;
 	nacd_session_data *session;
@@ -355,22 +418,258 @@ int nacd_tcp_client_handle_func(nacd_config_msg *nacd_cfg, user_info *user_msg)
 		retval = NACD_BUF_ERR;
 		goto end;
 	}
-	session->fd = nacd_prepare(nacd_cfg, &nacd_connec);
+	session->fd = nacd_prepare(nacd_cfg_ptr, &nacd_connec);
 	if (NULL == session->fd) {
 		WWC_ERROR("network wrong.. please check network..\n");
 		retval = NACD_SYSTEM_ERR;
 		goto end;
 	}
-	session->timeout = nacd_cfg->timeout;
-	session->state = NACD_CONNECT;
-	session->use_ssl = nacd_cfg->ssl;
+	session->nacd_config_msg_data.timeout = nacd_cfg_ptr->timeout;
+	session->nacd_config_msg_data.use_ssl = nacd_cfg_ptr->use_ssl;
 	memcpy(&session->nacd_connec, &nacd_connec, sizeof(nacd_connec));
-	strncpy(session->nacd_server_ip, nacd_cfg->nacd_server_ip, sizeof(session->nacd_server_ip));
-	session->nacd_server_port = nacd_cfg->nacd_server_port;
-	strncpy(session->user_name, user_msg->name, sizeof(session->user_name));
-	strncpy(session->user_passwd, user_msg->passwd, sizeof(session->user_passwd));
-	retval = nacd_open_session(session);
+	strncpy(session->nacd_config_msg_data.nacd_server_ip, nacd_cfg_ptr->nacd_server_ip, \
+			sizeof(session->nacd_config_msg_data.nacd_server_ip));
+	session->nacd_config_msg_data.nacd_server_port = nacd_cfg_ptr->nacd_server_port;
+	strncpy(session->user_info_data.user_name, user_info_ptr->user_name, \
+			sizeof(session->user_info_data.user_name));
+	strncpy(session->user_info_data.user_passwd, user_info_ptr->user_passwd, \
+			sizeof(session->user_info_data.user_passwd));
+	nacd_open_session(session);
+	nacd_process_task_session(session, nacd_state);
 
 end:
 	return retval;
 }
+
+int nacd_handle_sec_assert_func(nacd_config_msg *nacd_cfg_ptr, sec_assert_msg *sec_assert_msg_ptr, int nacd_state)
+{
+	int retval = NACD_SUCCESS;
+	nacd_session_data *session;
+	struct sockaddr_in nacd_connec;
+
+	session = (nacd_session_data *)malloc(sizeof(*session));
+	memset(session, 0, sizeof(*session));
+	if (NULL == session) {
+		WWC_ERROR("init session failure\n");
+		retval = NACD_BUF_ERR;
+		goto end;
+	}
+	session->fd = nacd_prepare(nacd_cfg_ptr, &nacd_connec);
+	if (NULL == session->fd) {
+		WWC_ERROR("network wrong.. please check network..\n");
+		retval = NACD_SYSTEM_ERR;
+		goto end;
+	}
+	session->nacd_config_msg_data.timeout = nacd_cfg_ptr->timeout;
+	session->nacd_config_msg_data.use_ssl = nacd_cfg_ptr->use_ssl;
+	memcpy(&session->nacd_connec, &nacd_connec, sizeof(nacd_connec));
+	strncpy(session->nacd_config_msg_data.nacd_server_ip, nacd_cfg_ptr->nacd_server_ip, \
+			sizeof(session->nacd_config_msg_data.nacd_server_ip));
+	session->nacd_config_msg_data.nacd_server_port = nacd_cfg_ptr->nacd_server_port;
+
+	nacd_open_session(session);
+	nacd_process_task_session(session, nacd_state);
+
+end:
+	return retval;
+}
+
+char g_websoap_user_url[2048] = {0,};
+
+nac_user *get_user_attr_by_name(char *username)
+{
+	int ret = 0;
+	nac_user *user = NULL;
+
+	char tmpreq[1024];
+	char *tmpvalue=NULL;
+
+	struct soap mysoap;
+	char save_challenge[64];
+
+	XMLDOMDocument *doc 			 = NULL;
+	XMLDOMNode	   *root			 = NULL;
+	XMLDOMNode	   *result_node 	 = NULL;
+
+	XMLDOMNode *chan_node=NULL;
+
+	XMLDOMNode	   *userlist_node	 = NULL;
+	XMLDOMNode	   *user_node		 = NULL;
+	XMLDOMNode	   *property_node	 = NULL;
+
+	struct ns1__challenge soap_chan_req;
+	struct ns1__challengeResponse soap_chan_resp;
+	struct ns1__userListGet soap_user_req;
+	struct ns1__userListGetResponse soap_user_resp;
+	
+	if (!g_websoap_user_url[0]) {
+		WWC_DEBUG("soap user url not set\n");
+		return NULL;
+	}
+	
+	soap_init(&mysoap);
+	soap_set_mode(&mysoap, SOAP_C_UTFSTRING);
+	mysoap.mode |= SOAP_C_UTFSTRING;
+
+	// 1. get challenge
+	snprintf(tmpreq,1024,"<?xml version=\"1.0\" encoding=\"UTF-8\"?><Chanllenge><EncCert></EncCert></Chanllenge>");
+	soap_chan_req.arg0=tmpreq;
+
+	ret = soap_call___ns1__challenge(&mysoap,g_websoap_user_url,NULL,&soap_chan_req,&soap_chan_resp);
+	if (ret) {
+		WWC_DEBUG("call soap_call___ns1__challenge failed, ret=%d\n", ret);
+		goto cleanup;
+	}
+
+
+	doc = sg_dom_xmldom_create();
+	if(NULL == doc){
+		WWC_DEBUG("sg_dom_xmldom_create failed\n");
+		goto cleanup;
+	}
+
+	if (!doc->loadXML(doc, soap_chan_resp.return_)) {
+		WWC_DEBUG("UserListGet: parse challenge resp, xml parse failed\n");
+		goto cleanup;
+	}
+
+	if ((root = sg_dom_rootdocnode(doc)) == NULL) {
+		WWC_DEBUG("UserListGet: challenge resp xml get root node failed\n");
+		goto cleanup;
+	}
+
+
+	result_node = sg_dom_get_xmlnode(root, "Result");
+	if (!result_node) {
+		WWC_DEBUG("UserListGet: challenge resp xml no Result node\n");
+		goto cleanup;
+	}
+
+	chan_node = sg_dom_get_xmlnode(result_node, "Challenge");
+	if (!result_node) {
+		WWC_DEBUG("UserListGet: challenge resp xml no Challenge node\n");
+		goto cleanup;
+	}
+
+	tmpvalue=sg_get_node_val(chan_node,".");
+
+	strncpy(save_challenge,tmpvalue,sizeof(save_challenge));
+
+	sg_dom_xmldom_release(doc);
+	doc=NULL;
+	
+	// 2. get user
+	WWC_DEBUG("get user %s", username);
+	snprintf(tmpreq,1024,"<?xml version=\"1.0\" encoding=\"UTF-8\"?><UserListGet><SearchInfo startNum=\"1\" maxNum=\"1\" challenge=\"%s\">"
+		"<Item><Condition name=\"登录名\" relation=\"等于\" value=\"%s\" /></Item></SearchInfo>"
+		"<Signature signerID=\"legendsec\" type=\"0\" algorithm=\"MD5\">12345678901234567890123456789012</Signature></UserListGet>",
+		save_challenge,username);	
+	
+	/*snprintf(tmpreq,1024,"<?xml version=\"1.0\" encoding=\"UTF-8\"?><UserListGet><SearchInfo startNum=\"1\" maxNum=\"1\" challenge=\"%s\">"
+		"<Item><Condition name=\"姓名\" relation=\"等于\" value=\"%s\" /></Item></SearchInfo>"
+		"<Signature signerID=\"legendsec\" type=\"0\" algorithm=\"MD5\">12345678901234567890123456789012</Signature></UserListGet>",
+		save_challenge,username);*/
+	
+	soap_user_req.arg0 = tmpreq;
+	ret = soap_call___ns1__userListGet(&mysoap,g_websoap_user_url,NULL,&soap_user_req,&soap_user_resp);
+	if (ret) {
+		WWC_DEBUG("call soap_call___ns1__userListGet failed, ret=%d\n", ret);
+		goto cleanup;
+	}
+
+	doc = sg_dom_xmldom_create();
+	if(NULL == doc){
+		goto cleanup;
+	}
+	if (!doc->loadXML(doc, soap_user_resp.return_)) {
+		WWC_DEBUG("UserListGet resp xml parse failed\n");
+		goto cleanup;
+	}
+	if ((root = sg_dom_rootdocnode(doc)) == NULL) {
+		WWC_DEBUG("UserListGet resp xml get root node failed\n");
+		goto cleanup;
+	}
+	
+	result_node = sg_dom_get_xmlnode(root, "Result");
+	if (!result_node) {
+		WWC_DEBUG("UserListGet resp xml no Result node\n");
+		goto cleanup;
+	}
+	userlist_node = sg_dom_get_xmlnode(result_node, "UserList");
+	if (!userlist_node) {
+		WWC_DEBUG("UserListGet resp xml no UserList node\n");
+		goto cleanup;
+	}
+	
+	user_node = sg_dom_get_xmlnode(userlist_node, "User");
+	if (!user_node) {
+		WWC_DEBUG("UserListGet resp xml no user node\n");
+		goto cleanup;
+	}
+	
+	user = malloc(sizeof(*user));
+	if (!user) {
+		WWC_DEBUG("malloc user memory failed\n");
+		goto cleanup;
+	}
+	memset(user, 0, sizeof(*user));
+	
+	property_node = sg_dom_firstchild(user_node);
+	while (property_node) {
+		char *name, *value;
+
+		name = sg_get_node_val(property_node, "name");
+		value = sg_get_node_val(property_node, "value");
+
+		if (!strcmp(name, "登录名")) {
+			strncpy(user->login_name, value, sizeof(user->login_name));
+		} else if (!strcmp(name, "姓名")) {
+			strncpy(user->name, value, sizeof(user->name));
+		} else if (!strcmp(name, "身份证号")) {
+			strncpy(user->id_card_num, value, sizeof(user->id_card_num));
+		} else if (!strcmp(name, "民族")) {
+			strncpy(user->ethnic, value, sizeof(user->ethnic));
+		} else if (!strcmp(name, "单位")) {
+			strncpy(user->unit, value, sizeof(user->unit));
+		} else if (!strcmp(name, "单位全称")) {
+			strncpy(user->unit_name, value, sizeof(user->unit_name));
+				} else if (!strcmp(name, "职务")) {
+			strncpy(user->position, value, sizeof(user->position));
+		} else if (!strcmp(name, "性别")) {
+			strncpy(user->gender, value, sizeof(user->gender));
+		} else if (!strcmp(name, "军队证件号")) {
+			strncpy(user->identity_no, value, sizeof(user->identity_no));
+		} else if (!strcmp(name, "保障卡号")) {
+			strncpy(user->soldier_security_no, value, sizeof(user->soldier_security_no));
+		} else if (!strcmp(name, "出生时间")) {
+			strncpy(user->birthday, value, sizeof(user->birthday));
+		} else if (!strcmp(name, "联系方式")) {
+			strncpy(user->contact_way, value, sizeof(user->contact_way));
+		} else if (!strcmp(name, "血型")) {
+			strncpy(user->blood_type, value, sizeof(user->blood_type));
+		} else if (!strcmp(name, "职务层级")) {
+			strncpy(user->rank, value, sizeof(user->rank));
+		} else if (!strcmp(name, "军衔")) {
+			strncpy(user->militray_rank, value, sizeof(user->militray_rank));
+		} else if (!strcmp(name, "军兵种")) {
+			strncpy(user->army_service, value, sizeof(user->army_service));
+		}
+
+		property_node = sg_dom_nextsibling(property_node);
+	}
+	
+
+cleanup:
+	if (doc != NULL) {
+		sg_dom_xmldom_release(doc);
+		doc = NULL;
+	}
+
+	soap_destroy(&mysoap);
+	soap_end(&mysoap);
+	soap_done(&mysoap);
+
+	return user;
+}
+
+

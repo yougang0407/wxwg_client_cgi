@@ -1,0 +1,4 @@
+include $(TOPDIR)/rules.mak
+
+prepare::
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/*.* ./

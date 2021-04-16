@@ -11,11 +11,15 @@ endif
 
 CFLAGS := -g
 
-SRCS := $(wildcard user.c)
+SRCS := user.c
 SRCS_TEST := $(wildcard test_user_main.c)
 OBJS := $(patsubst %c, %o, $(SRCS))
 
-INCLUDE := -I../include/
+INCLUDE := 
+
+LIBSGXML := -lsg_xmldom
+LIBPATH := -L../../../lib/xml/sg_xml/
+LIBS := ../../../lib/xml/sg_xml/libsg_xmldom.so
 
 .PHONY : all
 all : $(OBJS) test_userd

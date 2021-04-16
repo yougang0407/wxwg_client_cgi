@@ -1,0 +1,10 @@
+SUBDIRS=libxml 
+
+include $(TOPDIR)/rules.mak
+
+prepare::
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/Makefile.bak ./
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/Makefile.am ./
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/Makefile.in ./
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/win32config.h ./
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/wsockcompat.h ./

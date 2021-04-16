@@ -31,16 +31,16 @@ int main()
 	user_info *user_msg = (user_info *)malloc(sizeof(user_info));
 	nacd_config_msg *nacd_cfg = (nacd_config_msg *)malloc(sizeof(nacd_config_msg));;
 
-	snprintf(user_msg->name, sizeof(user_msg->name), "admin");
-	snprintf(user_msg->passwd, sizeof(user_msg->passwd), "123456");
+	snprintf(user_msg->user_name, sizeof(user_msg->user_name), "admin");
+	snprintf(user_msg->user_passwd, sizeof(user_msg->user_passwd), "123456");
 
 	snprintf(nacd_cfg->nacd_server_ip, sizeof(nacd_cfg->nacd_server_ip), "0.0.0.0");
 	nacd_cfg->nacd_server_port = 8859;
 	nacd_cfg->timeout = 1;
-	nacd_cfg->ssl = 0;
+	nacd_cfg->use_ssl = 0;
 
-	int ret = nacd_tcp_client_handle_func(nacd_cfg, user_msg);
-
+	int ret = nacd_handle_user_passwd_func(nacd_cfg, user_msg, NACD_USER_PASSWD_AUTH);
+	get_user_attr_by_name(user_msg->user_name);
 	event_dispatch();
 	return ret;
 }

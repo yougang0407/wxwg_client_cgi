@@ -1,0 +1,68 @@
+LINKS = *.h
+
+INCDIR = cp
+
+CCMODE = LIBRARY
+
+TARGET = libxml2
+
+TTS_CFLAGS := $(TTS_CFLAGS) -DDHAVE_CONFIG_H -D_REENTRANT -fno-strict-aliasing \
+			  -I./include -I./
+
+SRCS = SAX.c entities.c encoding.c error.c parserInternals.c  \
+		parser.c tree.c hash.c list.c xmlIO.c xmlmemory.c uri.c  \
+		valid.c xlink.c HTMLparser.c HTMLtree.c debugXML.c xpath.c  \
+		xpointer.c xinclude.c nanohttp.c nanoftp.c DOCBparser.c \
+		catalog.c globals.c threads.c c14n.c xmlstring.c \
+		xmlregexp.c xmlschemas.c xmlschemastypes.c xmlunicode.c \
+		xmlreader.c relaxng.c dict.c SAX2.c \
+		xmlwriter.c legacy.c chvalid.c pattern.c xmlsave.c \
+		xmlmodule.c schematron.c 
+
+prepare::
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/SAX.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/entities.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/encoding.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/error.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/parserInternals.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/parser.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/tree.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/hash.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/list.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlIO.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlmemory.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/uri.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/valid.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xlink.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/HTMLparser.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/HTMLtree.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/debugXML.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xpath.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xpointer.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xinclude.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/nanohttp.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/nanoftp.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/DOCBparser.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/catalog.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/globals.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/threads.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/c14n.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlstring.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlregexp.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlschemas.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlschemastypes.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlunicode.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/triostr.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/trio.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlreader.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/relaxng.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/dict.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/SAX2.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlwriter.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/legacy.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/chvalid.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/pattern.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlsave.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/xmlmodule.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/schematron.c
+	$(SYMLINK) $(SRCDIR)/$(THEDIR)/trionan.c
