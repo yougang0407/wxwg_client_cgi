@@ -62,8 +62,8 @@ void wxwgc_web_server_accept(int sockfd, short event, void *arg)
 
 	WWC_DEBUG("accept new client from %s fd=%d\n", inet_ntoa(addr.sin_addr), fd);
 
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 50000;
+	timeout.tv_sec = 10;
+	timeout.tv_usec = 0;
 	event_set(&client->ev, fd, EV_READ | EV_PERSIST, wxwgc_web_server_read, (void *)client);
 	event_add(&client->ev, &timeout);
 

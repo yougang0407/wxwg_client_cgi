@@ -2,7 +2,9 @@
 #define _NAC_SOAP_H_
 
 #include "soapStub.h"
+#include "stdsoap2.h"
 #include "RNServiceSoapBindingImplPortBinding.nsmap"
+//#include "AuthServiceSoapBinding.nsmap"
 
 #include "../../lib/xml/sg_xml/include/libxml/parser.h"
 #include "../../lib/xml/sg_xml/include/libxml/tree.h"

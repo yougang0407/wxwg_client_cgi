@@ -97,6 +97,7 @@ static int nacd_send_message(nacd_session_data *session)
 			break;
 
 		case NACD_SEND_USER_PASSWD:
+			WWC_DEBUG("SEND NACD_USER_PASSWD\n");
 			user_info_ptr_data_hdr->type = NACD_USER_PASSWD_AUTH;
 			user_info_ptr_data_hdr->len = sizeof(session->user_info_data);
 			WWC_DEBUG("SEND NACD_USER_PASSWD user_info_ptr_data_hdr->len[%d]\n", user_info_ptr_data_hdr->len);
@@ -120,10 +121,48 @@ static int nacd_send_message(nacd_session_data *session)
 
 		case NACD_ADD_SEC_ASSERT:
 			WWC_DEBUG("ADD NACD_SEC_ASSERT\n");
+			session->sec_assert_info_data.user_info_hdr.type = NACD_SEC_ASSERT_AAD;
+			session->sec_assert_info_data.user_info_hdr.len = sizeof(session->sec_assert_info_data);
+			WWC_DEBUG("SEND NACD_ADD_SEC_ASSERT session->sec_assert_info_data.user_info_hdr.len[%d]\n", session->sec_assert_info_data.user_info_hdr.len);
+			session->sec_assert_info_data.user_info_hdr.type = htons(session->sec_assert_info_data.user_info_hdr.type);
+			session->sec_assert_info_data.user_info_hdr.len = htons(session->sec_assert_info_data.user_info_hdr.len);
+			WWC_DEBUG("SEND NACD_ADD_SEC_ASSERT session->sec_assert_info_data.user_info_hdr.len[%d]\n", session->sec_assert_info_data.user_info_hdr.len);
+			WWC_DEBUG("session->nacd_config_msg_data.use_ssl[%d]\n", session->nacd_config_msg_data.use_ssl);
+			if (session->nacd_config_msg_data.use_ssl) {
+				retval = ssl_nacd_send(session->fd, (char *)(&session->sec_assert_info_data.user_info_hdr), \
+						 sizeof(session->sec_assert_info_data));
+			} else {
+				retval = nacd_send(session->fd, (char *)(&session->sec_assert_info_data.user_info_hdr), \
+						 sizeof(session->sec_assert_info_data));
+			}
+			if (retval == -1) {
+				WWC_ERROR("nacd add sec assert error\n");
+				retval = NACD_SYSTEM_ERR;
+				goto end;
+			}
 			break;
 
 		case NACD_DEL_SEC_ASSERT:
 			WWC_DEBUG("DEL NACD_SEC_ASSERT\n");
+			session->sec_assert_info_data.user_info_hdr.type = NACD_SEC_ASSERT_DEL;
+			session->sec_assert_info_data.user_info_hdr.len = sizeof(session->sec_assert_info_data);
+			WWC_DEBUG("SEND NACD_DEL_SEC_ASSERT session->sec_assert_info_data.user_info_hdr.len[%d]\n", session->sec_assert_info_data.user_info_hdr.len);
+			session->sec_assert_info_data.user_info_hdr.type = htons(session->sec_assert_info_data.user_info_hdr.type);
+			session->sec_assert_info_data.user_info_hdr.len = htons(session->sec_assert_info_data.user_info_hdr.len);
+			WWC_DEBUG("SEND NACD_DEL_SEC_ASSERT session->sec_assert_info_data.user_info_hdr.len[%d]\n", session->sec_assert_info_data.user_info_hdr.len);
+			WWC_DEBUG("session->nacd_config_msg_data.use_ssl[%d]\n", session->nacd_config_msg_data.use_ssl);
+			if (session->nacd_config_msg_data.use_ssl) {
+				retval = ssl_nacd_send(session->fd, (char *)(&session->sec_assert_info_data.user_info_hdr), \
+						 sizeof(session->sec_assert_info_data));
+			} else {
+				retval = nacd_send(session->fd, (char *)(&session->sec_assert_info_data.user_info_hdr), \
+						 sizeof(session->sec_assert_info_data));
+			}
+			if (retval == -1) {
+				WWC_ERROR("nacd del sec assert error\n");
+				retval = NACD_SYSTEM_ERR;
+				goto end;
+			}
 			break;
 
 		case NACD_QUIT:
@@ -441,7 +480,7 @@ end:
 	return retval;
 }
 
-int nacd_handle_sec_assert_func(nacd_config_msg *nacd_cfg_ptr, sec_assert_msg *sec_assert_msg_ptr, int nacd_state)
+int nacd_handle_sec_assert_func(nacd_config_msg *nacd_cfg_ptr, char *auth_sec_assert_msg, int nacd_state)
 {
 	int retval = NACD_SUCCESS;
 	nacd_session_data *session;
@@ -466,6 +505,8 @@ int nacd_handle_sec_assert_func(nacd_config_msg *nacd_cfg_ptr, sec_assert_msg *s
 	strncpy(session->nacd_config_msg_data.nacd_server_ip, nacd_cfg_ptr->nacd_server_ip, \
 			sizeof(session->nacd_config_msg_data.nacd_server_ip));
 	session->nacd_config_msg_data.nacd_server_port = nacd_cfg_ptr->nacd_server_port;
+	strncpy(session->sec_assert_info_data.auth_sec_assert_msg, auth_sec_assert_msg, \
+			sizeof(session->sec_assert_info_data.auth_sec_assert_msg));
 
 	nacd_open_session(session);
 	nacd_process_task_session(session, nacd_state);
@@ -474,15 +515,13 @@ end:
 	return retval;
 }
 
-char g_websoap_user_url[2048] = {0,};
-
-nac_user *get_user_attr_by_name(char *username)
+nac_user *get_user_attr_by_name(char *username, char *g_websoap_user_url)
 {
 	int ret = 0;
 	nac_user *user = NULL;
 
 	char tmpreq[1024];
-	char *tmpvalue=NULL;
+	char *tmpvalue = NULL;
 
 	struct soap mysoap;
 	char save_challenge[64];
@@ -491,7 +530,7 @@ nac_user *get_user_attr_by_name(char *username)
 	XMLDOMNode	   *root			 = NULL;
 	XMLDOMNode	   *result_node 	 = NULL;
 
-	XMLDOMNode *chan_node=NULL;
+	XMLDOMNode *chan_node = NULL;
 
 	XMLDOMNode	   *userlist_node	 = NULL;
 	XMLDOMNode	   *user_node		 = NULL;
@@ -501,26 +540,26 @@ nac_user *get_user_attr_by_name(char *username)
 	struct ns1__challengeResponse soap_chan_resp;
 	struct ns1__userListGet soap_user_req;
 	struct ns1__userListGetResponse soap_user_resp;
-	
+
 	if (!g_websoap_user_url[0]) {
 		WWC_DEBUG("soap user url not set\n");
 		return NULL;
 	}
-	
+
 	soap_init(&mysoap);
 	soap_set_mode(&mysoap, SOAP_C_UTFSTRING);
 	mysoap.mode |= SOAP_C_UTFSTRING;
 
 	// 1. get challenge
 	snprintf(tmpreq,1024,"<?xml version=\"1.0\" encoding=\"UTF-8\"?><Chanllenge><EncCert></EncCert></Chanllenge>");
-	soap_chan_req.arg0=tmpreq;
+	soap_chan_req.arg0 = tmpreq;
 
-	ret = soap_call___ns1__challenge(&mysoap,g_websoap_user_url,NULL,&soap_chan_req,&soap_chan_resp);
+	ret = soap_call___ns1__challenge(&mysoap, g_websoap_user_url, NULL, &soap_chan_req, \
+									 &soap_chan_resp);
 	if (ret) {
-		WWC_DEBUG("call soap_call___ns1__challenge failed, ret=%d\n", ret);
+		WWC_DEBUG("call soap_call___ns1__challenge failed, ret = %d\n", ret);
 		goto cleanup;
 	}
-
 
 	doc = sg_dom_xmldom_create();
 	if(NULL == doc){
@@ -538,7 +577,6 @@ nac_user *get_user_attr_by_name(char *username)
 		goto cleanup;
 	}
 
-
 	result_node = sg_dom_get_xmlnode(root, "Result");
 	if (!result_node) {
 		WWC_DEBUG("UserListGet: challenge resp xml no Result node\n");
@@ -551,34 +589,37 @@ nac_user *get_user_attr_by_name(char *username)
 		goto cleanup;
 	}
 
-	tmpvalue=sg_get_node_val(chan_node,".");
+	tmpvalue=sg_get_node_val(chan_node, ".");
 
-	strncpy(save_challenge,tmpvalue,sizeof(save_challenge));
+	strncpy(save_challenge, tmpvalue, sizeof(save_challenge));
 
 	sg_dom_xmldom_release(doc);
-	doc=NULL;
-	
+	doc = NULL;
+
 	// 2. get user
-	WWC_DEBUG("get user %s", username);
+	WWC_DEBUG("get user %s\n", username);
 	snprintf(tmpreq,1024,"<?xml version=\"1.0\" encoding=\"UTF-8\"?><UserListGet><SearchInfo startNum=\"1\" maxNum=\"1\" challenge=\"%s\">"
 		"<Item><Condition name=\"登录名\" relation=\"等于\" value=\"%s\" /></Item></SearchInfo>"
 		"<Signature signerID=\"legendsec\" type=\"0\" algorithm=\"MD5\">12345678901234567890123456789012</Signature></UserListGet>",
-		save_challenge,username);	
-	
+		save_challenge, username);
+
 	/*snprintf(tmpreq,1024,"<?xml version=\"1.0\" encoding=\"UTF-8\"?><UserListGet><SearchInfo startNum=\"1\" maxNum=\"1\" challenge=\"%s\">"
 		"<Item><Condition name=\"姓名\" relation=\"等于\" value=\"%s\" /></Item></SearchInfo>"
 		"<Signature signerID=\"legendsec\" type=\"0\" algorithm=\"MD5\">12345678901234567890123456789012</Signature></UserListGet>",
 		save_challenge,username);*/
-	
+
 	soap_user_req.arg0 = tmpreq;
-	ret = soap_call___ns1__userListGet(&mysoap,g_websoap_user_url,NULL,&soap_user_req,&soap_user_resp);
+	ret = soap_call___ns1__userListGet(&mysoap, g_websoap_user_url, NULL, &soap_user_req, \
+									   &soap_user_resp);
 	if (ret) {
 		WWC_DEBUG("call soap_call___ns1__userListGet failed, ret=%d\n", ret);
 		goto cleanup;
 	}
 
+	WWC_DEBUG("%s\n",soap_user_resp.return_);
+
 	doc = sg_dom_xmldom_create();
-	if(NULL == doc){
+	if (NULL == doc) {
 		goto cleanup;
 	}
 	if (!doc->loadXML(doc, soap_user_resp.return_)) {
@@ -589,7 +630,7 @@ nac_user *get_user_attr_by_name(char *username)
 		WWC_DEBUG("UserListGet resp xml get root node failed\n");
 		goto cleanup;
 	}
-	
+
 	result_node = sg_dom_get_xmlnode(root, "Result");
 	if (!result_node) {
 		WWC_DEBUG("UserListGet resp xml no Result node\n");
@@ -600,20 +641,20 @@ nac_user *get_user_attr_by_name(char *username)
 		WWC_DEBUG("UserListGet resp xml no UserList node\n");
 		goto cleanup;
 	}
-	
+
 	user_node = sg_dom_get_xmlnode(userlist_node, "User");
 	if (!user_node) {
 		WWC_DEBUG("UserListGet resp xml no user node\n");
 		goto cleanup;
 	}
-	
+
 	user = malloc(sizeof(*user));
 	if (!user) {
 		WWC_DEBUG("malloc user memory failed\n");
 		goto cleanup;
 	}
 	memset(user, 0, sizeof(*user));
-	
+
 	property_node = sg_dom_firstchild(user_node);
 	while (property_node) {
 		char *name, *value;
@@ -633,7 +674,7 @@ nac_user *get_user_attr_by_name(char *username)
 			strncpy(user->unit, value, sizeof(user->unit));
 		} else if (!strcmp(name, "单位全称")) {
 			strncpy(user->unit_name, value, sizeof(user->unit_name));
-				} else if (!strcmp(name, "职务")) {
+		} else if (!strcmp(name, "职务")) {
 			strncpy(user->position, value, sizeof(user->position));
 		} else if (!strcmp(name, "性别")) {
 			strncpy(user->gender, value, sizeof(user->gender));
@@ -657,7 +698,6 @@ nac_user *get_user_attr_by_name(char *username)
 
 		property_node = sg_dom_nextsibling(property_node);
 	}
-	
 
 cleanup:
 	if (doc != NULL) {
@@ -672,4 +712,104 @@ cleanup:
 	return user;
 }
 
+int get_random_func(char *ip, int port, char *res_random, int res_random_len)
+{
+	int ret = 0;
+	struct soap mysoap;
+	char requrl[1024];
+
+	XMLDOMDocument *doc              = NULL;
+	XMLDOMNode     *root             = NULL;
+	XMLDOMNode *resultnode = NULL;
+	XMLDOMNode *rndnode = NULL;
+
+	struct ns1__random soap_random_req;
+	struct ns1__randomResponse soap_random_resp;
+
+	char *tmpvalue = NULL;
+
+	snprintf(requrl, sizeof(requrl), "http://%s:%d/wserver_war/app/services/AuthService", \
+			 ip, port);
+	WWC_DEBUG("request url:%s\n", requrl);
+
+	soap_init(&mysoap);
+	soap_set_mode(&mysoap, SOAP_C_UTFSTRING);
+	mysoap.mode |= SOAP_C_UTFSTRING;
+
+	WWC_DEBUG("call soap_call___ns1__random\n");
+	ret = soap_call___ns1__random(&mysoap, requrl, NULL, &soap_random_req, &soap_random_resp);
+	WWC_DEBUG("soap_call___ns1__random return %d\n", ret);
+	if (ret) {
+		goto cleanup;
+	}
+
+	WWC_DEBUG("%s\n", soap_random_resp.return_);
+
+	doc = sg_dom_xmldom_create();
+	if (!doc->loadXML(doc, soap_random_resp.return_)) {
+		WWC_DEBUG("xml failed\n");
+		goto cleanup;
+	}
+
+	root = sg_dom_rootdocnode(doc);
+	WWC_DEBUG("root = %p\n", root);
+
+	resultnode = sg_dom_get_xmlnode(root, "Result");
+	WWC_DEBUG("Result = %p\n", resultnode);
+	rndnode = sg_dom_get_xmlnode(resultnode, "Random");
+	WWC_DEBUG("rndnode = %p\n", rndnode);
+	tmpvalue = sg_get_node_val(rndnode, ".");
+
+	strncpy(res_random, tmpvalue, res_random_len);
+
+	WWC_DEBUG("res_random = %s\n", res_random);
+
+	sg_dom_xmldom_release(doc);
+
+cleanup:
+	soap_destroy(&mysoap);
+	soap_end(&mysoap);
+	soap_done(&mysoap);
+	return ret;
+}
+
+char auth_sec_assert_msg[2048];
+
+void get_auth_sec_assert_msg_func(nac_user *user, char *res_random)
+{
+	char sec_assert_msg[1024] = {0,};
+	char *client_ip = "192.168.5.212";
+	int userAuthType = 1;
+	snprintf(sec_assert_msg, 1024, \
+			 "<SecAssert ID=\"a3ef32bc@RNS1.NB\"> "
+				"<Info timestamp=\"20141031 120000\" "
+				"		validityFrom=\"20141031 120015\" "
+				"		validityTo=\"20141031 200015\">"
+				"	<UserInfo userAuthID=\"CN=wangliang,OU=cdjq,O=MILCA\" "
+				"		userAuthType=\"%d\" authSecLevel=\"3\" userIP=\"%s\">"
+				"		<UserID>wangliang@RNS1.NB</UserID>"
+				"		<Property name=\"登录名\" value=\"%s\"/>"
+				"		<Property name=\"身份证号\" value=\"%s\"/>"
+				"		<Property name=\"姓名\" value=\"%s\"/>"
+				"		<Property name=\"单位\" value=\"%s\"/>"
+				"	</UserInfo>"
+				"</Info>"
+				"<Signature signerID=\"CN=rsrf001,OU=secdev,O=MILCA\" "
+				"			type=\"1\" algorithm=\"SM2-SHA\">xxxxxxxxx "
+				"</Signature>"
+			 "</SecAssert>", userAuthType, client_ip, user->login_name, user->id_card_num, \
+			 user->name, user->unit);
+	WWC_DEBUG("sec_assert_msg: %s\n\n", sec_assert_msg);
+	//char *auth_sec_assert_msg = (char *)malloc(2048);
+	snprintf(auth_sec_assert_msg, 2048, \
+			 "<AuthSecAssert> "
+			 "	<Random>%s</Random> "
+			 "	%s "
+			 "	<Signature signerId=\"xxx\"  type=\"1\">xxxxxx</Signature> "
+			 "	<SignerCert>xxxx</SignerCert> "
+			 "</AuthSecAssert> ", res_random, sec_assert_msg);
+	WWC_DEBUG("auth_sec_assert_msg: %s\n", auth_sec_assert_msg);
+
+	return;
+}
 

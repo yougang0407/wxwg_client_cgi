@@ -9,7 +9,7 @@ ifeq (x86, $(ARCH))
 CC := gcc
 endif
 
-CFLAGS := -g -Wall -fno-strict-aliasing -DWITH_NONAMESPACES
+CFLAGS := -g -Wall -fno-strict-aliasing
 
 SRCS := $(wildcard nacd_tcp_client.c ./soap/*.c) 
 SRCS_TEST := $(wildcard test_nacd_tcp_client_main.c)
@@ -19,8 +19,6 @@ INCLUDE := -I./include/ -I./soap/ -I../include/ -I../lib/libevent/libevent-2.0.2
 		   -I../lib/libevent/libevent-2.0.21-stable/include/ -I../lib/openssl/openssl-1.0.2q/include/ \
 		   -I../lib/xml/sg_xml/ -I../lib/xml/libxml2/include/libxml/ -I../lib/xml/libxml2/include/ \
 		   -I../lib/xml/sg_xml/include/libxml/
-
-LINK := ./soap/RNServiceSoapBindingImplPortBinding.nsmap
 
 LIBL := -levent -lssl -lcrypto -ldl -lpthread -lsg_xmldom -lxml2 -lgsoap
 LIBPATH := -L../lib/libevent/libevent-2.0.21-stable/.libs/ -L../lib/openssl/openssl-1.0.2q/ \

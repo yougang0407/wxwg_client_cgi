@@ -68,17 +68,10 @@ typedef struct user_info_t {
 	char user_passwd[INFO_SIZE];
 } user_info;
 
-typedef struct sec_assert_msg_t {
+typedef struct sec_assert_info_t {
 	user_info_ptr_hdr user_info_hdr;
-	char id[MAX_NAC_ID_LEN];
-	time_t timestamp;
-	time_t validity_from;
-	time_t validity_to;
-	char user_auth_id[MAX_NAC_ID_LEN];
-	int user_auth_type;
-	uint32_t user_ip;
-	char user_id[MAX_NAC_ID_LEN];
-} sec_assert_msg;
+	char auth_sec_assert_msg[2048];
+} sec_assert_info;
 
 typedef struct nacd_session_data_t {
 	struct event ev;
@@ -87,7 +80,7 @@ typedef struct nacd_session_data_t {
 	int state;
 	nacd_config_msg nacd_config_msg_data;
 	user_info user_info_data;
-	sec_assert_msg sec_assert_msg_data;
+	sec_assert_info sec_assert_info_data;
 } nacd_session_data;
 
 typedef struct nac_user_st {
@@ -124,8 +117,10 @@ typedef struct nac_user_st {
 
 
 int nacd_handle_user_passwd_func(nacd_config_msg *nacd_cfg_ptr, user_info *user_info_ptr, int nacd_state);
-int nacd_handle_sec_assert_func(nacd_config_msg *nacd_cfg_ptr, sec_assert_msg *sec_assert_msg_ptr, int nacd_state);
-nac_user *get_user_attr_by_name(char *username);
+int nacd_handle_sec_assert_func(nacd_config_msg *nacd_cfg_ptr, char *auth_sec_assert_msg, int nacd_state);
+nac_user *get_user_attr_by_name(char *username, char *g_websoap_user_url);
+int get_random_func(char *ip, int port, char *res_random, int res_random_len);
+void get_auth_sec_assert_msg_func(nac_user *user, char *res_random);
 
 
 #endif

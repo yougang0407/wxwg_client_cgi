@@ -230,10 +230,72 @@ static int cgi_exec_func(int sock, const char* method, char* path, const char* q
 #endif
 }
 
+extern char auth_sec_assert_msg[];
+int get_user_info_auth_result_func(user_info *user_info_ptr, nacd_config_msg *nacd_cfg_ptr, char *auth_sec_assert_msg)
+{
+	int ret = 0;
+
+	char soapip[16] = "172.24.227.34";
+	int soapport = 8080;
+	int retval = 0;
+
+	char g_websoap_user_url[256];
+	strncpy(g_websoap_user_url, \
+			"http://172.24.227.34:8080/wserver_war/app/services/RNService", \
+			sizeof(g_websoap_user_url));
+	strncpy(user_info_ptr->user_name, "555666198808089999@ZS", \
+			sizeof(user_info_ptr->user_name));
+
+	nac_user *nac_user_ptr = NULL;
+	nac_user_ptr = get_user_attr_by_name(user_info_ptr->user_name, g_websoap_user_url);
+	if (nac_user_ptr != NULL) {
+		WWC_DEBUG("username[%s] get_user_attr_by_name success.\n", \
+				  user_info_ptr->user_name);
+		WWC_DEBUG("user:%p \n\
+				   \r user->name:%s \n\
+				   \r user->login_name:%s \n\
+				   \r user->id_card_num:%s \n\
+				   \r \n", nac_user_ptr, nac_user_ptr->name, nac_user_ptr->login_name, \
+				   nac_user_ptr->id_card_num);
+	
+		// to do get random and create SecAssert ...
+		char res_random[32];
+		if (get_random_func(soapip, soapport, res_random, sizeof(res_random))) {
+			WWC_ERROR("get_random_func error..");
+			return ret;
+		}
+
+		get_auth_sec_assert_msg_func(nac_user_ptr, res_random);
+		WWC_DEBUG("auth_sec_assert_msg: %s\n", auth_sec_assert_msg);
+
+		// send add sec assert to nacd
+		retval = nacd_handle_sec_assert_func(nacd_cfg_ptr, auth_sec_assert_msg, \
+											 NACD_ADD_SEC_ASSERT);
+		if (retval) {
+			WWC_ERROR("username: %s  nacd_add_sec_assert_func error[%d] \n", \
+					  user_info_ptr->user_name, retval);
+			return ret;
+		}
+	} else {
+		retval = nacd_handle_user_passwd_func(nacd_cfg_ptr, user_info_ptr, \
+											  NACD_USER_PASSWD_AUTH);
+		if (retval) {
+			WWC_ERROR("username: %s  nacd_tcp_client_handle_func error[%d] \n", \
+					  user_info_ptr->user_name, retval);
+			return ret;
+		}
+	}
+
+	ret = 1;
+	return ret;
+}
+
+static int flag = 0;
+static user_info *user_info_ptr = NULL;
+static nacd_config_msg *nacd_cfg_ptr = NULL;
 int http_request_handle_func(wxwgc_web_client *client)
 {
 	int ret = 0;
-	int flag = 0;
 
 	if (get_line(client->fd, client->buf, sizeof(client->buf)) <= 0) {
 		print_log("get_line error!  ", FATAL);
@@ -272,13 +334,12 @@ int http_request_handle_func(wxwgc_web_client *client)
 	WWC_DEBUG("get_line path: %s \n", path);
 
 	char http_get_content[CONTENT_SIZE] = {0,};
-	user_info *user_info_ptr = (user_info *)malloc(sizeof(user_info));
-	nacd_config_msg *nacd_cfg_ptr = (nacd_config_msg *)malloc(sizeof(nacd_config_msg));;
+	user_info_ptr = (user_info *)malloc(sizeof(user_info));
+	nacd_cfg_ptr = (nacd_config_msg *)malloc(sizeof(nacd_config_msg));;
 	snprintf(nacd_cfg_ptr->nacd_server_ip, sizeof(nacd_cfg_ptr->nacd_server_ip), "0.0.0.0");
 	nacd_cfg_ptr->nacd_server_port = 8859;
-	nacd_cfg_ptr->timeout = 1;
+	nacd_cfg_ptr->timeout = 10;
 	nacd_cfg_ptr->use_ssl = 0;
-	sec_assert_msg *sec_assert_msg_ptr = (sec_assert_msg *)malloc(sizeof(sec_assert_msg));;
 
 	if (strcasecmp("GET", method) == 0) {
 		token = strtok(NULL, "?");
@@ -302,39 +363,9 @@ int http_request_handle_func(wxwgc_web_client *client)
 			WWC_DEBUG("get_line user_info_ptr->user_passwd: %s \n", user_info_ptr->user_passwd);
 		}
 
-		// to do authenticate the third ID manage system
-		char id_manage_server_ip[16] = "172.30.202.81";
-		int id_manage_server_port = 8086;
-		void* res_user_info = NULL;
-		int retval = 0;
-
-		nac_user *nac_user_ptr = NULL;
-		nac_user_ptr = get_user_attr_by_name(user_info_ptr->user_name);
-		if (nac_user_ptr != NULL) {
-			WWC_DEBUG("username[%s] get_user_attr_by_name success.\n", \
-					  user_info_ptr->user_name);
-			// to do get random and create SecAssert ...
-			// send sec assert to nacd
-			retval = nacd_handle_sec_assert_func(nacd_cfg_ptr, sec_assert_msg_ptr, \
-												 NACD_ADD_SEC_ASSERT);
-			if (!retval) {
-				WWC_ERROR("username: %s  nacd_add_sec_assert_func error[%d] \n", \
-						  user_info_ptr->user_name, retval);
-			}
-			flag = 1;
-		} else {
-			retval = nacd_handle_user_passwd_func(nacd_cfg_ptr, user_info_ptr, \
-												  NACD_USER_PASSWD_AUTH);
-			if (!retval) {
-				WWC_ERROR("username: %s  nacd_tcp_client_handle_func error[%d] \n", \
-						  user_info_ptr->user_name, retval);
-			}
-			flag = 1;
-		}
 		if (strstr(url, "?") != NULL)
 			cgi_mode_flag = CGI_MODE_ENABLE;
 	}
-
 
 	char http_response_path[PATH_SIZE];
 
@@ -342,6 +373,7 @@ int http_request_handle_func(wxwgc_web_client *client)
 		snprintf(http_response_path, sizeof(http_response_path), \
 				 "webui/index.html");
 	} else if (strcasecmp("/cgi_bin/cgi_select", path) == 0) {
+		flag = get_user_info_auth_result_func(user_info_ptr, nacd_cfg_ptr, auth_sec_assert_msg);
 		#ifndef DEBUG
 		if (strcasecmp("admin", user_info_ptr->user_name) == 0 \
 			&& strcasecmp("123456", user_info_ptr->user_passwd) == 0) {
@@ -358,8 +390,9 @@ int http_request_handle_func(wxwgc_web_client *client)
 		} else {
 			snprintf(http_response_path, sizeof(http_response_path), \
 					 "webui/login_failed.html");
-			int retval = nacd_handle_sec_assert_func(nacd_cfg_ptr, sec_assert_msg_ptr, NACD_DEL_SEC_ASSERT);
-			if (!retval) {
+			int retval = nacd_handle_sec_assert_func(nacd_cfg_ptr, auth_sec_assert_msg, \
+													 NACD_DEL_SEC_ASSERT);
+			if (retval) {
 				WWC_ERROR("username: %s  nacd_add_sec_assert_func error[%d] \n", \
 						  user_info_ptr->user_name, retval);
 			}
@@ -394,9 +427,7 @@ int http_request_handle_func(wxwgc_web_client *client)
 	}
 
 end:
-	close(client->fd);
 	free(user_info_ptr);
 	free(nacd_cfg_ptr);
-	free(sec_assert_msg_ptr);
 	return ret;
 }
