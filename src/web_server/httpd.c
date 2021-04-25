@@ -243,8 +243,11 @@ int get_user_info_auth_result_func(user_info *user_info_ptr, nacd_config_msg *na
 	strncpy(g_websoap_user_url, \
 			"http://172.24.227.34:8080/wserver_war/app/services/RNService", \
 			sizeof(g_websoap_user_url));
+	#if 0
 	strncpy(user_info_ptr->user_name, "555666198808089999@ZS", \
 			sizeof(user_info_ptr->user_name));
+	#endif
+	WWC_DEBUG("user_info_ptr->user_name[%s]\n", user_info_ptr->user_name);
 
 	nac_user *nac_user_ptr = NULL;
 	nac_user_ptr = get_user_attr_by_name(user_info_ptr->user_name, g_websoap_user_url);
@@ -278,7 +281,7 @@ int get_user_info_auth_result_func(user_info *user_info_ptr, nacd_config_msg *na
 		}
 	} else {
 		retval = nacd_handle_user_passwd_func(nacd_cfg_ptr, user_info_ptr, \
-											  NACD_USER_PASSWD_AUTH);
+											  NACD_SEND_USER_PASSWD);
 		if (retval) {
 			WWC_ERROR("username: %s  nacd_tcp_client_handle_func error[%d] \n", \
 					  user_info_ptr->user_name, retval);
@@ -291,11 +294,12 @@ int get_user_info_auth_result_func(user_info *user_info_ptr, nacd_config_msg *na
 }
 
 static int flag = 0;
-static user_info *user_info_ptr = NULL;
-static nacd_config_msg *nacd_cfg_ptr = NULL;
+user_info *user_info_ptr = NULL;
+nacd_config_msg *nacd_cfg_ptr = NULL;
 int http_request_handle_func(wxwgc_web_client *client)
 {
 	int ret = 0;
+	char http_response_path[PATH_SIZE];
 
 	if (get_line(client->fd, client->buf, sizeof(client->buf)) <= 0) {
 		print_log("get_line error!  ", FATAL);
@@ -346,6 +350,21 @@ int http_request_handle_func(wxwgc_web_client *client)
 		snprintf(http_get_content, sizeof(http_get_content), "%s", token);
 		WWC_DEBUG("get_line http_get_content: %s \n", http_get_content);
 
+		if (strcasecmp("(null)", http_get_content) == 0) {
+			cgi_mode_flag = CGI_MODE_DISABLE;
+			snprintf(path, sizeof(path), "/");
+			WWC_DEBUG("%s\n", path);
+			#if 1
+			int res = nacd_handle_sec_assert_func(nacd_cfg_ptr, auth_sec_assert_msg, \
+													 NACD_DEL_SEC_ASSERT);
+			if (res) {
+				WWC_ERROR("username: %s  nacd_add_sec_assert_func error[%d] \n", \
+						  user_info_ptr->user_name, res);
+			}
+			#endif
+			goto index;
+		}
+
 		if (strstr(http_get_content, "&") != NULL) {
 			token = strtok(http_get_content, "&");
 			snprintf(user_info_ptr->user_name, sizeof(user_info_ptr->user_name), "%s", token);
@@ -367,8 +386,7 @@ int http_request_handle_func(wxwgc_web_client *client)
 			cgi_mode_flag = CGI_MODE_ENABLE;
 	}
 
-	char http_response_path[PATH_SIZE];
-
+index:
 	if (strcasecmp("/", path) == 0) {
 		snprintf(http_response_path, sizeof(http_response_path), \
 				 "webui/index.html");
@@ -390,12 +408,6 @@ int http_request_handle_func(wxwgc_web_client *client)
 		} else {
 			snprintf(http_response_path, sizeof(http_response_path), \
 					 "webui/login_failed.html");
-			int retval = nacd_handle_sec_assert_func(nacd_cfg_ptr, auth_sec_assert_msg, \
-													 NACD_DEL_SEC_ASSERT);
-			if (retval) {
-				WWC_ERROR("username: %s  nacd_add_sec_assert_func error[%d] \n", \
-						  user_info_ptr->user_name, retval);
-			}
 		}
 	}
 

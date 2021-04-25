@@ -813,3 +813,71 @@ void get_auth_sec_assert_msg_func(nac_user *user, char *res_random)
 	return;
 }
 
+typedef void (*timer_handle)(int fd, short event, void *arg);
+
+int timer_is_work(struct event *timer)
+{
+#if 00
+	int ret = 0;
+
+	ret = event_pending(timer, EV_TIMEOUT, NULL);
+
+	return ret & EV_TIMEOUT;
+#endif
+	return 1;
+}
+
+void nacd_close_timer(struct event *timer)
+{
+	if (timer_is_work(timer)) {
+		evtimer_del(timer);
+	}
+}
+
+void nacd_set_timer(struct event *timer,
+	unsigned long expires, timer_handle func, void *arg)
+{
+	struct timeval time;
+
+	time.tv_sec = 0;
+	time.tv_usec = expires;
+
+	evtimer_set(timer, func, arg);
+	evtimer_add(timer, &time);
+}
+
+void nacd_reset_timer(struct event *timer,
+	unsigned long expires, timer_handle func, void *arg)
+{
+	nacd_close_timer(timer);
+	nacd_set_timer(timer, expires, func, arg);
+}
+
+struct event nacd_breath_out;
+#define NACD_SYNC_BREATH_TIME		(500 * 1000)
+#define NACD_SYNC_BREATH_TIMEOUT	(3 * NACD_SYNC_BREATH_TIME)
+
+void nacd_Heartbeat_timeout_func(int fd, short event, void *arg)
+{
+	WWC_DEBUG("nacd_Heartbeat_timeout...\n");
+	// to do ...
+	#if 0
+	int res = nacd_handle_sec_assert_func(nacd_cfg_ptr, auth_sec_assert_msg, \
+											 NACD_DEL_SEC_ASSERT);
+	if (res) {
+		WWC_ERROR("username: %s  nacd_add_sec_assert_func error[%d] \n", \
+				  user_info_ptr->user_name, res);
+	}
+	#endif
+
+	nacd_reset_timer(&nacd_breath_out,
+		NACD_SYNC_BREATH_TIMEOUT, nacd_Heartbeat_timeout_func, NULL);
+}
+
+void nacd_set_Heartbeat_timer(void)
+{
+	nacd_set_timer(&nacd_breath_out,
+		NACD_SYNC_BREATH_TIMEOUT, nacd_Heartbeat_timeout_func, NULL);
+}
+
+

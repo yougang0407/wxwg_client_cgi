@@ -122,5 +122,7 @@ nac_user *get_user_attr_by_name(char *username, char *g_websoap_user_url);
 int get_random_func(char *ip, int port, char *res_random, int res_random_len);
 void get_auth_sec_assert_msg_func(nac_user *user, char *res_random);
 
+void nacd_set_Heartbeat_timer(void);
+
 
 #endif

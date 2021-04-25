@@ -10,6 +10,8 @@
 #include <web_server.h>
 #include <log.h>
 
+#include "./nacd_interaction/include/nacd_tcp_client.h"
+
 
 struct event_base *sg_current_base = NULL;
 
@@ -41,6 +43,8 @@ int main(int argc, char *argv[])
 
 	wxwgc_init_event();
 	wxwgc_web_server_start(local_ip, local_port);
+
+	//nacd_set_Heartbeat_timer();
 
 	event_dispatch();
 	return 0;
