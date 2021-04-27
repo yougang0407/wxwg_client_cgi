@@ -22,6 +22,9 @@
 
 struct event_base *sg_current_base = NULL;
 
+nacd_config_msg *nacd_cfg_ptr = NULL;
+user_info *user_info_ptr = NULL;
+
 
 void getuserlist(char *ip,int port)
 {

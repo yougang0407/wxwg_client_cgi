@@ -20,7 +20,7 @@ void wxwgc_web_server_read(int sockfd, short event, void *arg)
 	wxwgc_web_client_info wxwgc_web_client_msg;
 
 	if (event & EV_TIMEOUT) {
-		WWC_DEBUG("wxwgc web server read data from client(fd:%d) timeout\n", client->fd);
+		WWC_DEBUG("wxwgc web server read data from http client(fd:%d) timeout\n", client->fd);
 		goto exit;
 	}
 
@@ -62,7 +62,7 @@ void wxwgc_web_server_accept(int sockfd, short event, void *arg)
 
 	WWC_DEBUG("accept new client from %s fd=%d\n", inet_ntoa(addr.sin_addr), fd);
 
-	timeout.tv_sec = 10;
+	timeout.tv_sec = 3600;
 	timeout.tv_usec = 0;
 	event_set(&client->ev, fd, EV_READ | EV_PERSIST, wxwgc_web_server_read, (void *)client);
 	event_add(&client->ev, &timeout);

@@ -5,7 +5,14 @@
 
 #define DEBUG
 
-//打印错误信息
+
+static int flag = 0;
+
+extern char auth_sec_assert_msg[];
+extern nacd_config_msg *nacd_cfg_ptr;
+extern user_info *user_info_ptr;
+
+
 void print_log(const char* log_msg, int level)
 {
 	char* err_list[5] = {
@@ -230,7 +237,6 @@ static int cgi_exec_func(int sock, const char* method, char* path, const char* q
 #endif
 }
 
-extern char auth_sec_assert_msg[];
 int get_user_info_auth_result_func(user_info *user_info_ptr, nacd_config_msg *nacd_cfg_ptr, char *auth_sec_assert_msg)
 {
 	int ret = 0;
@@ -280,8 +286,7 @@ int get_user_info_auth_result_func(user_info *user_info_ptr, nacd_config_msg *na
 			return ret;
 		}
 	} else {
-		retval = nacd_handle_user_passwd_func(nacd_cfg_ptr, user_info_ptr, \
-											  NACD_SEND_USER_PASSWD);
+		retval = nacd_handle_user_passwd_func(nacd_cfg_ptr, user_info_ptr);
 		if (retval) {
 			WWC_ERROR("username: %s  nacd_tcp_client_handle_func error[%d] \n", \
 					  user_info_ptr->user_name, retval);
@@ -293,9 +298,6 @@ int get_user_info_auth_result_func(user_info *user_info_ptr, nacd_config_msg *na
 	return ret;
 }
 
-static int flag = 0;
-user_info *user_info_ptr = NULL;
-nacd_config_msg *nacd_cfg_ptr = NULL;
 int http_request_handle_func(wxwgc_web_client *client)
 {
 	int ret = 0;
@@ -338,12 +340,6 @@ int http_request_handle_func(wxwgc_web_client *client)
 	WWC_DEBUG("get_line path: %s \n", path);
 
 	char http_get_content[CONTENT_SIZE] = {0,};
-	user_info_ptr = (user_info *)malloc(sizeof(user_info));
-	nacd_cfg_ptr = (nacd_config_msg *)malloc(sizeof(nacd_config_msg));;
-	snprintf(nacd_cfg_ptr->nacd_server_ip, sizeof(nacd_cfg_ptr->nacd_server_ip), "0.0.0.0");
-	nacd_cfg_ptr->nacd_server_port = 8859;
-	nacd_cfg_ptr->timeout = 10;
-	nacd_cfg_ptr->use_ssl = 0;
 
 	if (strcasecmp("GET", method) == 0) {
 		token = strtok(NULL, "?");
@@ -354,7 +350,7 @@ int http_request_handle_func(wxwgc_web_client *client)
 			cgi_mode_flag = CGI_MODE_DISABLE;
 			snprintf(path, sizeof(path), "/");
 			WWC_DEBUG("%s\n", path);
-			#if 1
+			#if 0
 			int res = nacd_handle_sec_assert_func(nacd_cfg_ptr, auth_sec_assert_msg, \
 													 NACD_DEL_SEC_ASSERT);
 			if (res) {
@@ -439,7 +435,5 @@ index:
 	}
 
 end:
-	free(user_info_ptr);
-	free(nacd_cfg_ptr);
 	return ret;
 }

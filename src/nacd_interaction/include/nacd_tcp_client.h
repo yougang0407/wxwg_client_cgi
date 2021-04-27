@@ -23,24 +23,31 @@ do {				\
 typedef unsigned int	uint32_t;
 
 enum nacd_inter_protol_type {
+	NACD_HEART_BEAT_KEEPALIVE,
 	NACD_USER_PASSWD_AUTH,
 	NACD_SEC_ASSERT_AAD,
 	NACD_SEC_ASSERT_DEL,
+	NACD_QUIT,
+	NACD_HEART_BEAT_KEEPALIVE_SUCCESS,
+	NACD_HEART_BEAT_KEEPALIVE_FAILED,
 	NACD_USER_PASSWD_AUTH_SUCCESS,
 	NACD_USER_PASSWD_AUTH_FAILED,
-	NACD_SEC_ASSERT_AAD_SUCCESS,
-	NACD_SEC_ASSERT_AAD_FAILED,
+	NACD_SEC_ASSERT_ADD_SUCCESS,
+	NACD_SEC_ASSERT_ADD_FAILED,
 	NACD_SEC_ASSERT_DEL_SUCCESS,
 	NACD_SEC_ASSERT_DEL_FAILED,
+	NACD_QUIT_SUCCESS,
+	NACD_QUIT_FAILED,
 	NACD_INTER_PROTOL_MAX,
 };
 
 enum nacd_state_e {
 	NACD_CONNECT,
+	NACD_SEND_HEART_BEAT,
 	NACD_SEND_USER_PASSWD,
 	NACD_ADD_SEC_ASSERT,
 	NACD_DEL_SEC_ASSERT,
-	NACD_QUIT,
+	NACD_QUIT_STATE,
 	NACD_STATE_MAX,
 };
 
@@ -57,21 +64,29 @@ typedef struct nacd_config_msg_t {
 	unsigned short use_ssl;
 } nacd_config_msg;
 
-typedef struct user_info_ptr_hdr_t {
+typedef struct nacd_tcp_client_info_hdr_t {
 	unsigned short type;
 	unsigned short len;
-} user_info_ptr_hdr;
+} nacd_tcp_client_info_hdr;
+
+typedef struct heart_beat_info_t {
+	nacd_tcp_client_info_hdr nacd_tcp_client_msg_hdr;
+} heart_beat_info;
 
 typedef struct user_info_t {
-	user_info_ptr_hdr user_info_hdr;
+	nacd_tcp_client_info_hdr nacd_tcp_client_msg_hdr;
 	char user_name[INFO_SIZE];
 	char user_passwd[INFO_SIZE];
 } user_info;
 
 typedef struct sec_assert_info_t {
-	user_info_ptr_hdr user_info_hdr;
+	nacd_tcp_client_info_hdr nacd_tcp_client_msg_hdr;
 	char auth_sec_assert_msg[2048];
 } sec_assert_info;
+
+typedef struct quit_info_t {
+	nacd_tcp_client_info_hdr nacd_tcp_client_msg_hdr;
+} quit_info;
 
 typedef struct nacd_session_data_t {
 	struct event ev;
@@ -79,8 +94,10 @@ typedef struct nacd_session_data_t {
 	struct sockaddr_in nacd_connec;
 	int state;
 	nacd_config_msg nacd_config_msg_data;
+	heart_beat_info heart_beat_info_data;
 	user_info user_info_data;
 	sec_assert_info sec_assert_info_data;
+	quit_info quit_info_data;
 } nacd_session_data;
 
 typedef struct nac_user_st {
@@ -115,8 +132,8 @@ typedef struct nac_user_st {
 	char has_fingerprint[8];
 } nac_user;
 
-
-int nacd_handle_user_passwd_func(nacd_config_msg *nacd_cfg_ptr, user_info *user_info_ptr, int nacd_state);
+int nacd_handle_heartbeat_func(nacd_config_msg *nacd_cfg_ptr);
+int nacd_handle_user_passwd_func(nacd_config_msg *nacd_cfg_ptr, user_info *user_info_ptr);
 int nacd_handle_sec_assert_func(nacd_config_msg *nacd_cfg_ptr, char *auth_sec_assert_msg, int nacd_state);
 nac_user *get_user_attr_by_name(char *username, char *g_websoap_user_url);
 int get_random_func(char *ip, int port, char *res_random, int res_random_len);

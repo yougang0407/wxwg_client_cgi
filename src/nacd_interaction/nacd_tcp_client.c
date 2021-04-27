@@ -17,7 +17,12 @@
 
 #define NACD_BUF	512
 
+extern nacd_config_msg *nacd_cfg_ptr;
+extern user_info *user_info_ptr;
+
 static int SSL_UP = 0;
+char auth_sec_assert_msg[2048];
+
 
 int nacd_error(char *string) {
 	/* returns 1 if nacd server error reply (i.e : -ERR ...) */
@@ -83,8 +88,7 @@ static int nacd_send_message(nacd_session_data *session)
 	WWC_DEBUG("send nacd message\n");
 	int retval = NACD_SUCCESS;
 	char *srvdata = NULL;
-	char send_buf[NACD_BUF] = {0,};
-	user_info_ptr_hdr *user_info_ptr_data_hdr = &(session->user_info_data.user_info_hdr);
+	nacd_tcp_client_info_hdr *nacd_tcp_client_msg_hdr_ptr = NULL;
 
 	switch (session->state) {
 		case NACD_CONNECT:
@@ -96,20 +100,45 @@ static int nacd_send_message(nacd_session_data *session)
 			}
 			break;
 
-		case NACD_SEND_USER_PASSWD:
-			WWC_DEBUG("SEND NACD_USER_PASSWD\n");
-			user_info_ptr_data_hdr->type = NACD_USER_PASSWD_AUTH;
-			user_info_ptr_data_hdr->len = sizeof(session->user_info_data);
-			WWC_DEBUG("SEND NACD_USER_PASSWD user_info_ptr_data_hdr->len[%d]\n", user_info_ptr_data_hdr->len);
-			user_info_ptr_data_hdr->type = htons(user_info_ptr_data_hdr->type);
-			user_info_ptr_data_hdr->len = htons(user_info_ptr_data_hdr->len);
-			WWC_DEBUG("SEND NACD_USER_PASSWD user_info_ptr_data_hdr->len[%d]\n", user_info_ptr_data_hdr->len);
+		case NACD_SEND_HEART_BEAT:
+			WWC_DEBUG("SEND NACD_HEART_BEAT\n");
+			nacd_tcp_client_msg_hdr_ptr = &(session->heart_beat_info_data.nacd_tcp_client_msg_hdr);
+			nacd_tcp_client_msg_hdr_ptr->type = NACD_HEART_BEAT_KEEPALIVE;
+			nacd_tcp_client_msg_hdr_ptr->len = sizeof(session->heart_beat_info_data);
+			WWC_DEBUG("SEND NACD_HEART_BEAT nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
+			nacd_tcp_client_msg_hdr_ptr->type = htons(nacd_tcp_client_msg_hdr_ptr->type);
+			nacd_tcp_client_msg_hdr_ptr->len = htons(nacd_tcp_client_msg_hdr_ptr->len);
+			WWC_DEBUG("SEND NACD_HEART_BEAT nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
 			WWC_DEBUG("session->nacd_config_msg_data.use_ssl[%d]\n", session->nacd_config_msg_data.use_ssl);
 			if (session->nacd_config_msg_data.use_ssl) {
-				retval = ssl_nacd_send(session->fd, (char *)(user_info_ptr_data_hdr), \
+				retval = ssl_nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
+						 sizeof(session->heart_beat_info_data));
+			} else {
+				retval = nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
+						 sizeof(session->heart_beat_info_data));
+			}
+			if (retval == -1) {
+				WWC_ERROR("nacd send heart beat error\n");
+				retval = NACD_SYSTEM_ERR;
+				goto end;
+			}
+			break;
+
+		case NACD_SEND_USER_PASSWD:
+			WWC_DEBUG("SEND NACD_USER_PASSWD\n");
+			nacd_tcp_client_msg_hdr_ptr = &(session->user_info_data.nacd_tcp_client_msg_hdr);
+			nacd_tcp_client_msg_hdr_ptr->type = NACD_USER_PASSWD_AUTH;
+			nacd_tcp_client_msg_hdr_ptr->len = sizeof(session->user_info_data);
+			WWC_DEBUG("SEND NACD_USER_PASSWD nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
+			nacd_tcp_client_msg_hdr_ptr->type = htons(nacd_tcp_client_msg_hdr_ptr->type);
+			nacd_tcp_client_msg_hdr_ptr->len = htons(nacd_tcp_client_msg_hdr_ptr->len);
+			WWC_DEBUG("SEND NACD_USER_PASSWD nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
+			WWC_DEBUG("session->nacd_config_msg_data.use_ssl[%d]\n", session->nacd_config_msg_data.use_ssl);
+			if (session->nacd_config_msg_data.use_ssl) {
+				retval = ssl_nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
 						 sizeof(session->user_info_data));
 			} else {
-				retval = nacd_send(session->fd, (char *)(user_info_ptr_data_hdr), \
+				retval = nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
 						 sizeof(session->user_info_data));
 			}
 			if (retval == -1) {
@@ -121,18 +150,19 @@ static int nacd_send_message(nacd_session_data *session)
 
 		case NACD_ADD_SEC_ASSERT:
 			WWC_DEBUG("ADD NACD_SEC_ASSERT\n");
-			session->sec_assert_info_data.user_info_hdr.type = NACD_SEC_ASSERT_AAD;
-			session->sec_assert_info_data.user_info_hdr.len = sizeof(session->sec_assert_info_data);
-			WWC_DEBUG("SEND NACD_ADD_SEC_ASSERT session->sec_assert_info_data.user_info_hdr.len[%d]\n", session->sec_assert_info_data.user_info_hdr.len);
-			session->sec_assert_info_data.user_info_hdr.type = htons(session->sec_assert_info_data.user_info_hdr.type);
-			session->sec_assert_info_data.user_info_hdr.len = htons(session->sec_assert_info_data.user_info_hdr.len);
-			WWC_DEBUG("SEND NACD_ADD_SEC_ASSERT session->sec_assert_info_data.user_info_hdr.len[%d]\n", session->sec_assert_info_data.user_info_hdr.len);
+			nacd_tcp_client_msg_hdr_ptr = &(session->sec_assert_info_data.nacd_tcp_client_msg_hdr);
+			nacd_tcp_client_msg_hdr_ptr->type = NACD_SEC_ASSERT_AAD;
+			nacd_tcp_client_msg_hdr_ptr->len = sizeof(session->sec_assert_info_data);
+			WWC_DEBUG("SEND NACD_ADD_SEC_ASSERT nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
+			nacd_tcp_client_msg_hdr_ptr->type = htons(nacd_tcp_client_msg_hdr_ptr->type);
+			nacd_tcp_client_msg_hdr_ptr->len = htons(nacd_tcp_client_msg_hdr_ptr->len);
+			WWC_DEBUG("SEND NACD_ADD_SEC_ASSERT nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
 			WWC_DEBUG("session->nacd_config_msg_data.use_ssl[%d]\n", session->nacd_config_msg_data.use_ssl);
 			if (session->nacd_config_msg_data.use_ssl) {
-				retval = ssl_nacd_send(session->fd, (char *)(&session->sec_assert_info_data.user_info_hdr), \
+				retval = ssl_nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
 						 sizeof(session->sec_assert_info_data));
 			} else {
-				retval = nacd_send(session->fd, (char *)(&session->sec_assert_info_data.user_info_hdr), \
+				retval = nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
 						 sizeof(session->sec_assert_info_data));
 			}
 			if (retval == -1) {
@@ -144,18 +174,19 @@ static int nacd_send_message(nacd_session_data *session)
 
 		case NACD_DEL_SEC_ASSERT:
 			WWC_DEBUG("DEL NACD_SEC_ASSERT\n");
-			session->sec_assert_info_data.user_info_hdr.type = NACD_SEC_ASSERT_DEL;
-			session->sec_assert_info_data.user_info_hdr.len = sizeof(session->sec_assert_info_data);
-			WWC_DEBUG("SEND NACD_DEL_SEC_ASSERT session->sec_assert_info_data.user_info_hdr.len[%d]\n", session->sec_assert_info_data.user_info_hdr.len);
-			session->sec_assert_info_data.user_info_hdr.type = htons(session->sec_assert_info_data.user_info_hdr.type);
-			session->sec_assert_info_data.user_info_hdr.len = htons(session->sec_assert_info_data.user_info_hdr.len);
-			WWC_DEBUG("SEND NACD_DEL_SEC_ASSERT session->sec_assert_info_data.user_info_hdr.len[%d]\n", session->sec_assert_info_data.user_info_hdr.len);
+			nacd_tcp_client_msg_hdr_ptr = &(session->sec_assert_info_data.nacd_tcp_client_msg_hdr);
+			nacd_tcp_client_msg_hdr_ptr->type = NACD_SEC_ASSERT_DEL;
+			nacd_tcp_client_msg_hdr_ptr->len = sizeof(session->sec_assert_info_data);
+			WWC_DEBUG("SEND NACD_DEL_SEC_ASSERT nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
+			nacd_tcp_client_msg_hdr_ptr->type = htons(nacd_tcp_client_msg_hdr_ptr->type);
+			nacd_tcp_client_msg_hdr_ptr->len = htons(nacd_tcp_client_msg_hdr_ptr->len);
+			WWC_DEBUG("SEND NACD_DEL_SEC_ASSERT nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
 			WWC_DEBUG("session->nacd_config_msg_data.use_ssl[%d]\n", session->nacd_config_msg_data.use_ssl);
 			if (session->nacd_config_msg_data.use_ssl) {
-				retval = ssl_nacd_send(session->fd, (char *)(&session->sec_assert_info_data.user_info_hdr), \
+				retval = ssl_nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
 						 sizeof(session->sec_assert_info_data));
 			} else {
-				retval = nacd_send(session->fd, (char *)(&session->sec_assert_info_data.user_info_hdr), \
+				retval = nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
 						 sizeof(session->sec_assert_info_data));
 			}
 			if (retval == -1) {
@@ -165,19 +196,30 @@ static int nacd_send_message(nacd_session_data *session)
 			}
 			break;
 
-		case NACD_QUIT:
-			snprintf(send_buf, NACD_BUF, "QUIT\r\n");
-			WWC_DEBUG("SEND NACD_QUIT[%s]\n", send_buf);
+		case NACD_QUIT_STATE:
+			WWC_DEBUG("SEND NACD_QUIT\n");
+			nacd_tcp_client_msg_hdr_ptr = &(session->quit_info_data.nacd_tcp_client_msg_hdr);
+			nacd_tcp_client_msg_hdr_ptr->type = NACD_QUIT;
+			nacd_tcp_client_msg_hdr_ptr->len = sizeof(session->quit_info_data);
+			WWC_DEBUG("SEND NACD_QUIT nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
+			nacd_tcp_client_msg_hdr_ptr->type = htons(nacd_tcp_client_msg_hdr_ptr->type);
+			nacd_tcp_client_msg_hdr_ptr->len = htons(nacd_tcp_client_msg_hdr_ptr->len);
+			WWC_DEBUG("SEND NACD_QUIT nacd_tcp_client_msg_hdr_ptr->len[%d]\n", nacd_tcp_client_msg_hdr_ptr->len);
+			WWC_DEBUG("session->nacd_config_msg_data.use_ssl[%d]\n", session->nacd_config_msg_data.use_ssl);
 			if (session->nacd_config_msg_data.use_ssl) {
-				retval = ssl_nacd_send(session->fd, (char *)send_buf, strlen(send_buf));
+				retval = ssl_nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
+						 sizeof(session->heart_beat_info_data));
 			} else {
-				retval = nacd_send(session->fd, (char *)send_buf, strlen(send_buf));
+				retval = nacd_send(session->fd, (char *)(nacd_tcp_client_msg_hdr_ptr), \
+						 sizeof(session->heart_beat_info_data));
 			}
 			if (retval == -1) {
+				WWC_ERROR("nacd send quit error\n");
 				retval = NACD_SYSTEM_ERR;
 				goto end;
 			}
 			break;
+
 	}
 	retval = NACD_SUCCESS;
 
@@ -198,7 +240,7 @@ static int nacd_recv_message(nacd_session_data *session)
 		nacd_recv(session->fd, buf, NACD_BUF);
 	}
 
-	user_info_ptr_hdr *user_info_ptr_data_hdr = NULL;
+	nacd_tcp_client_info_hdr *nacd_tcp_client_info_hdr_ptr = NULL;
 	switch (session->state) {
 		case NACD_CONNECT:
 			WWC_DEBUG("RECV NACD_CONNECT\n\n");
@@ -206,7 +248,23 @@ static int nacd_recv_message(nacd_session_data *session)
 				retval = NACD_CONN_ERR;
 				goto end;
 			}
-			session->state = NACD_SEND_USER_PASSWD;
+			break;
+
+		case NACD_SEND_HEART_BEAT:
+			WWC_DEBUG("RECV NACD_SEND_HEART_BEAT\n\n");
+			if (nacd_error(buf)) {
+				retval = NACD_HEART_BEAT_ERR;
+				goto end;
+			}
+			nacd_tcp_client_info_hdr_ptr = (nacd_tcp_client_info_hdr *)buf;
+			nacd_tcp_client_info_hdr_ptr->type = ntohs(nacd_tcp_client_info_hdr_ptr->type);
+			WWC_DEBUG("nacd_tcp_client_info_hdr_ptr->type[%d]\n", nacd_tcp_client_info_hdr_ptr->type);
+			if (nacd_tcp_client_info_hdr_ptr->type == NACD_HEART_BEAT_KEEPALIVE_SUCCESS) {
+				WWC_DEBUG("NACD_HEART_BEAT_KEEPALIVE_SUCCESS\n");
+			} else if (nacd_tcp_client_info_hdr_ptr->type == NACD_HEART_BEAT_KEEPALIVE_FAILED) {
+				WWC_DEBUG("NACD_HEART_BEAT_KEEPALIVE_FAILED\n");
+			}
+			session->state = NACD_QUIT_STATE;
 			break;
 
 		case NACD_SEND_USER_PASSWD:
@@ -215,15 +273,15 @@ static int nacd_recv_message(nacd_session_data *session)
 				retval = NACD_USER_PASSWD_AUTH_ERR;
 				goto end;
 			}
-			user_info_ptr_data_hdr = (user_info_ptr_hdr *)buf;
-			user_info_ptr_data_hdr->type = ntohs(user_info_ptr_data_hdr->type);
-			WWC_DEBUG("user_info_ptr_data_hdr->type[%d]\n", user_info_ptr_data_hdr->type);
-			if (user_info_ptr_data_hdr->type == NACD_USER_PASSWD_AUTH_SUCCESS) {
+			nacd_tcp_client_info_hdr_ptr = (nacd_tcp_client_info_hdr *)buf;
+			nacd_tcp_client_info_hdr_ptr->type = ntohs(nacd_tcp_client_info_hdr_ptr->type);
+			WWC_DEBUG("nacd_tcp_client_info_hdr_ptr->type[%d]\n", nacd_tcp_client_info_hdr_ptr->type);
+			if (nacd_tcp_client_info_hdr_ptr->type == NACD_USER_PASSWD_AUTH_SUCCESS) {
 				WWC_DEBUG("NACD_USER_PASSWD_AUTH_SUCCESS\n");
-			} else if (user_info_ptr_data_hdr->type == NACD_USER_PASSWD_AUTH_FAILED) {
+			} else if (nacd_tcp_client_info_hdr_ptr->type == NACD_USER_PASSWD_AUTH_FAILED) {
 				WWC_DEBUG("NACD_USER_PASSWD_AUTH_FAILED\n");
 			}
-			session->state = NACD_QUIT;
+			session->state = NACD_QUIT_STATE;
 			break;
 
 		case NACD_ADD_SEC_ASSERT:
@@ -232,15 +290,15 @@ static int nacd_recv_message(nacd_session_data *session)
 				retval = NACD_SEC_ASSERT_ADD_ERR;
 				goto end;
 			}
-			user_info_ptr_data_hdr = (user_info_ptr_hdr *)buf;
-			user_info_ptr_data_hdr->type = ntohs(user_info_ptr_data_hdr->type);
-			WWC_DEBUG("user_info_ptr_data_hdr->type[%d]\n", user_info_ptr_data_hdr->type);
-			if (user_info_ptr_data_hdr->type == NACD_SEC_ASSERT_AAD_SUCCESS) {
-				WWC_DEBUG("NACD_SEC_ASSERT_AAD_SUCCESS\n");
-			} else if (user_info_ptr_data_hdr->type == NACD_SEC_ASSERT_AAD_FAILED) {
-				WWC_DEBUG("NACD_SEC_ASSERT_AAD_FAILED\n");
+			nacd_tcp_client_info_hdr_ptr = (nacd_tcp_client_info_hdr *)buf;
+			nacd_tcp_client_info_hdr_ptr->type = ntohs(nacd_tcp_client_info_hdr_ptr->type);
+			WWC_DEBUG("nacd_tcp_client_info_hdr_ptr->type[%d]\n", nacd_tcp_client_info_hdr_ptr->type);
+			if (nacd_tcp_client_info_hdr_ptr->type == NACD_SEC_ASSERT_ADD_SUCCESS) {
+				WWC_DEBUG("NACD_SEC_ASSERT_ADD_SUCCESS\n");
+			} else if (nacd_tcp_client_info_hdr_ptr->type == NACD_SEC_ASSERT_ADD_FAILED) {
+				WWC_DEBUG("NACD_SEC_ASSERT_ADD_FAILED\n");
 			}
-			session->state = NACD_QUIT;
+			session->state = NACD_QUIT_STATE;
 			break;
 
 		case NACD_DEL_SEC_ASSERT:
@@ -249,25 +307,34 @@ static int nacd_recv_message(nacd_session_data *session)
 				retval = NACD_SEC_ASSERT_DEL_ERR;
 				goto end;
 			}
-			user_info_ptr_data_hdr = (user_info_ptr_hdr *)buf;
-			user_info_ptr_data_hdr->type = ntohs(user_info_ptr_data_hdr->type);
-			WWC_DEBUG("user_info_ptr_data_hdr->type[%d]\n", user_info_ptr_data_hdr->type);
-			if (user_info_ptr_data_hdr->type == NACD_SEC_ASSERT_DEL_SUCCESS) {
+			nacd_tcp_client_info_hdr_ptr = (nacd_tcp_client_info_hdr *)buf;
+			nacd_tcp_client_info_hdr_ptr->type = ntohs(nacd_tcp_client_info_hdr_ptr->type);
+			WWC_DEBUG("nacd_tcp_client_info_hdr_ptr->type[%d]\n", nacd_tcp_client_info_hdr_ptr->type);
+			if (nacd_tcp_client_info_hdr_ptr->type == NACD_SEC_ASSERT_DEL_SUCCESS) {
 				WWC_DEBUG("NACD_SEC_ASSERT_DEL_SUCCESS\n");
-			} else if (user_info_ptr_data_hdr->type == NACD_SEC_ASSERT_DEL_FAILED) {
+			} else if (nacd_tcp_client_info_hdr_ptr->type == NACD_SEC_ASSERT_DEL_FAILED) {
 				WWC_DEBUG("NACD_SEC_ASSERT_DEL_FAILED\n");
 			}
-			session->state = NACD_QUIT;
+			session->state = NACD_QUIT_STATE;
 			break;
 
-		case NACD_QUIT:
+		case NACD_QUIT_STATE:
 			WWC_DEBUG("RECV NACD_QUIT\n\n");
 			if (nacd_error(buf)) {
-				retval = NACD_DATA_ERR;
+				retval = NACD_QUIT_ERR;
 				goto end;
+			}
+			nacd_tcp_client_info_hdr_ptr = (nacd_tcp_client_info_hdr *)buf;
+			nacd_tcp_client_info_hdr_ptr->type = ntohs(nacd_tcp_client_info_hdr_ptr->type);
+			WWC_DEBUG("nacd_tcp_client_info_hdr_ptr->type[%d]\n", nacd_tcp_client_info_hdr_ptr->type);
+			if (nacd_tcp_client_info_hdr_ptr->type == NACD_QUIT_SUCCESS) {
+				WWC_DEBUG("NACD_QUIT_SUCCESS\n");
+			} else if (nacd_tcp_client_info_hdr_ptr->type == NACD_QUIT_FAILED) {
+				WWC_DEBUG("NACD_QUIT_FAILED\n");
 			}
 			session->state = NACD_STATE_MAX;
 			break;
+
 	}
 	retval = NACD_SUCCESS;
 
@@ -444,7 +511,41 @@ nacdsock* nacd_prepare(nacd_config_msg *nacd_cfg_ptr, struct sockaddr_in *connec
 	return fd;
 }
 
-int nacd_handle_user_passwd_func(nacd_config_msg *nacd_cfg_ptr, user_info *user_info_ptr, int nacd_state)
+int nacd_handle_heartbeat_func(nacd_config_msg *nacd_cfg_ptr)
+{
+	int retval = NACD_SUCCESS;
+	nacd_session_data *session;
+	struct sockaddr_in nacd_connec;
+
+	session = (nacd_session_data *)malloc(sizeof(*session));
+	memset(session, 0, sizeof(*session));
+	if (NULL == session) {
+		WWC_ERROR("init session failure\n");
+		retval = NACD_BUF_ERR;
+		goto end;
+	}
+	session->fd = nacd_prepare(nacd_cfg_ptr, &nacd_connec);
+	if (NULL == session->fd) {
+		WWC_ERROR("network wrong.. please check network..\n");
+		retval = NACD_SYSTEM_ERR;
+		goto end;
+	}
+	session->nacd_config_msg_data.timeout = nacd_cfg_ptr->timeout;
+	session->nacd_config_msg_data.use_ssl = nacd_cfg_ptr->use_ssl;
+	memcpy(&session->nacd_connec, &nacd_connec, sizeof(nacd_connec));
+	strncpy(session->nacd_config_msg_data.nacd_server_ip, nacd_cfg_ptr->nacd_server_ip, \
+			sizeof(session->nacd_config_msg_data.nacd_server_ip));
+	session->nacd_config_msg_data.nacd_server_port = nacd_cfg_ptr->nacd_server_port;
+
+	nacd_open_session(session);
+	nacd_process_task_session(session, NACD_HEART_BEAT_KEEPALIVE);
+
+end:
+	return retval;
+}
+
+
+int nacd_handle_user_passwd_func(nacd_config_msg *nacd_cfg_ptr, user_info *user_info_ptr)
 {
 	int retval = NACD_SUCCESS;
 	nacd_session_data *session;
@@ -474,7 +575,7 @@ int nacd_handle_user_passwd_func(nacd_config_msg *nacd_cfg_ptr, user_info *user_
 	strncpy(session->user_info_data.user_passwd, user_info_ptr->user_passwd, \
 			sizeof(session->user_info_data.user_passwd));
 	nacd_open_session(session);
-	nacd_process_task_session(session, nacd_state);
+	nacd_process_task_session(session, NACD_USER_PASSWD_AUTH);
 
 end:
 	return retval;
@@ -773,8 +874,6 @@ cleanup:
 	return ret;
 }
 
-char auth_sec_assert_msg[2048];
-
 void get_auth_sec_assert_msg_func(nac_user *user, char *res_random)
 {
 	char sec_assert_msg[1024] = {0,};
@@ -854,21 +953,16 @@ void nacd_reset_timer(struct event *timer,
 }
 
 struct event nacd_breath_out;
-#define NACD_SYNC_BREATH_TIME		(500 * 1000)
+#define NACD_SYNC_BREATH_TIME		(1000 * 1000)
 #define NACD_SYNC_BREATH_TIMEOUT	(3 * NACD_SYNC_BREATH_TIME)
 
 void nacd_Heartbeat_timeout_func(int fd, short event, void *arg)
 {
-	WWC_DEBUG("nacd_Heartbeat_timeout...\n");
-	// to do ...
-	#if 0
-	int res = nacd_handle_sec_assert_func(nacd_cfg_ptr, auth_sec_assert_msg, \
-											 NACD_DEL_SEC_ASSERT);
-	if (res) {
-		WWC_ERROR("username: %s  nacd_add_sec_assert_func error[%d] \n", \
-				  user_info_ptr->user_name, res);
+	int retval = nacd_handle_heartbeat_func(nacd_cfg_ptr);
+	if (retval) {
+		WWC_ERROR("nacd_handle_heartbeat_func error[%d] \n", retval);
+		return;
 	}
-	#endif
 
 	nacd_reset_timer(&nacd_breath_out,
 		NACD_SYNC_BREATH_TIMEOUT, nacd_Heartbeat_timeout_func, NULL);
